@@ -1,0 +1,9 @@
+# Ignore everything
+*
+# Except the code folder
+!code/
+# And of course except .R files (the code!)
+!*.R
+# And keep .gitignore itself
+!.gitignore
+.Rproj.user
