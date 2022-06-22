@@ -246,7 +246,7 @@ binned.meta.data <- meta.data[,1:2]
 for(theTrait in colnames(meta.data[,c(-1,-2)])){
   # Keep only traits with over 10 levels
   if(length(levels(factor(meta.data[,theTrait]))) > 10){
-    # Keep only numeric or date traits
+    # Keep only numeric traits
     if(check.numeric(meta.data[1,theTrait])){
       cat(paste("Binning:", theTrait,"\n"))
      
