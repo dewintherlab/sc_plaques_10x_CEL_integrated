@@ -198,23 +198,156 @@ ggsave("full_43p_celseq_integration/First round of clustering/Integration 43p vs
 saveRDS(integrated.full.seurat, "Seurat_Objects/full.43p_10X.integrated.seurat.RDS")
 #integrated.full.seurat <- readRDS(file = "Seurat_Objects/full.43p_10X.integrated.seurat.RDS")
 
+
+#==================================================================================================================================
+## Name all clusters so we can do a proper LRI analysis
+# First let's make a bit less clusters (especially T cell cloud is too divided)
+dir.create("full_43p_celseq_integration/Second round of clustering/", showWarnings = F, recursive = T)
+set.seed(1)
+integrated.full.seurat <- FindClusters( object = integrated.full.seurat, resolution = 1, verbose = T, random.seed = 666)
+
+## Visualize
+# Plot Clusters
+customUMAP(object     = integrated.full.seurat, shuffle = T,
+           title      = "Initial clustering", label = T, label.size = 4,
+           legend.pos = "right", 
+           pt.size    = 2,
+           file.name  = "full_43p_celseq_integration/Second round of clustering/Integration intitial clustering UMAP.pdf", 
+           plot.width = 15)
+
+# Plot Method
+customUMAP(object     = integrated.full.seurat, shuffle = T,
+           title      = "Initial clustering", 
+           legend.pos = "right", group.by = "Method",
+           pt.size    = 1,
+           file.name  = "full_43p_celseq_integration/Second round of clustering/Integration Method UMAP.pdf", 
+           plot.width = 15)
+
+# Plot Patients
+customUMAP(object     = integrated.full.seurat, shuffle = T,
+           title      = "Initial clustering", 
+           legend.pos = "right", group.by = "Patient",
+           pt.size    = 1,
+           file.name  = "full_43p_celseq_integration/Second round of clustering/Integration Patient UMAP.pdf", 
+           plot.width = 15)
+
+# Plot Tissue
+customUMAP(object     = integrated.full.seurat, shuffle = T,
+           title      = "Initial clustering", 
+           legend.pos = "right", group.by = "Tissue",
+           pt.size    = 1,
+           file.name  = "full_43p_celseq_integration/Second round of clustering/Integration Tissue UMAP.pdf", 
+           plot.width = 15)
+
+
+## Plot some marker genes
+bunchOfCustomPlots(features   = c("CD3E", "CD4", "CD8A","FOXP3", "NCAM1", 
+                                  "CD14", "CD68", "CD1C", "TREM2", "IL1B",
+                                  "CD79A", "ACTA2", "CD34", "KIT", "OLR1" ), 
+                   object     = integrated.full.seurat,
+                   ncol       = 3,
+                   name       = "full_43p_celseq_integration/Second round of clustering/Cell type defining genes",
+                   Vln.width  = 20, 
+                   Vln.height = 25
+)
+
+## Get markers per cluster
+DefaultAssay(integrated.full.seurat) <- "RNA"
+integrated.full.seurat.markers <- FindAllMarkers(integrated.full.seurat, assay = "RNA", only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25)
+
+# Save the top9 markers per cluster
+sep.markers <- integrated.full.seurat.markers %>% group_by(cluster) %>% top_n(9, avg_log2FC)
+
+# plot the top9 markers per cluster
+dir.create("full_43p_celseq_integration/Second round of clustering/clusters/", showWarnings = F, recursive = T)
+num.clus <- length(unique(Idents(integrated.full.seurat)))
+for(i in levels(Idents(integrated.full.seurat))){
+  # Make feature, violin, and dot plots
+  bunchOfCustomPlots(features  = as.vector(unlist(sep.markers[sep.markers$cluster == i, "gene"])), 
+                     object    = integrated.full.seurat,
+                     name      = paste("full_43p_celseq_integration/Second round of clustering/clusters/Cluster ",i, " markers", sep = ""),
+                     
+                     Vln.width = 25, Vln.height = 25)
+}
+
+
+## Use this info to rename all but the myeloid clusters
+integrated.full.seurat <- RenameIdents(integrated.full.seurat, "0"  = "CD4+ T Cells",
+                                                               "1"  = "CD4+ T Cells",
+                                                               "2"  = "CD4+ T Cells",
+                                                               "3"  = "CD8+ T Cells",
+                                                               "4"  = "CD4+ T Cells",
+                                                               "5"  = "CD8+ T Cells",
+                                                               "7"  = "CD56+ NK Cells II",
+                                                               "10" = "CD8+ T Cells",
+                                                               "11" = "CD8+ T Cells",
+                                                               "12" = "FOXP3+ T Cells",
+                                                               "13" = "CD56+ NK Cells",
+                                                               "17" = "CD4+ T Cells",
+                                                               "21" = "CD4+ T Cells",
+                                                               "9"  = "CD79+ Class-switched Memory B Cells",
+                                                               "16" = "CD34+ Endothelial Cells",
+                                                               "18" = "ACTA2+ Smooth Muscle Cells",
+                                                               "19" = "CD3+ T Cells",
+                                                               "20" = "CD3+ T Cells",
+                                                               "23" = "KIT+ Mast Cells",
+                                                               "24" = "CD79+ Plasma B Cells",
+                                                               "26" = "CD79+ B Cells"
+                                                               )
+
+# Plot Clusters
+customUMAP(object     = integrated.full.seurat, shuffle = T,
+           title      = "Initial clustering", label = T, label.size = 4,
+           legend.pos = "right", 
+           pt.size    = 2,
+           file.name  = "full_43p_celseq_integration/Second round of clustering/Integration named clustering no mye UMAP.pdf", 
+           plot.width = 15)
+
+
+
 ## Incorporate our refined monocyte and macrophage identities
-# Get myeloid idents 
-mye.idents <- c(Idents(integrated.mye.seurat), Idents(pbmc.monocytes.seurat))
-mye.cells  <- names(mye.idents)
+# Get myeloid idents
+mye.idents        <- c(as.vector(Idents(integrated.mye.seurat)), 
+                       as.vector(Idents(pbmc.monocytes.seurat)))
+names(mye.idents) <- c(names(Idents(integrated.mye.seurat)),
+                       names(Idents(pbmc.monocytes.seurat)))
+mye.cells         <- names(mye.idents)
+
+
+# Check where the mye idents fall on the full plot
+p1 <- DimPlot(integrated.full.seurat, cells = mye.cells ) + theme(legend.position = "bottom")
+p2 <- DimPlot(integrated.full.seurat) + theme(legend.position = "bottom")
+p1 + p2
+ggsave("full_43p_celseq_integration/Second round of clustering/Mye cell identities UMAP.pdf", width = 20, height = 10)
+
+tmp.seurat <- AddMetaData(integrated.full.seurat, metadata = mye.idents, col.name = "mye.ident")
+DimPlot(tmp.seurat, cells = mye.cells, group.by = "mye.ident", cols = M.int_refined.pop.colors) + theme(legend.position = "right")
+ggsave("full_43p_celseq_integration/Second round of clustering/Original refined Mye cell identities UMAP.pdf", width = 20, height = 10)
 
 # Set myeloid idents
 Idents(integrated.full.seurat, cells = mye.cells) <- mye.idents
 
-# Unset all others, for now
-Idents(integrated.full.seurat, cells = colnames(integrated.full.seurat)[!colnames(integrated.full.seurat) %in% mye.cells]) <- "Other"
+# Visualize
+customUMAP(object = integrated.full.seurat, legend.pos = "right", plot.width = 20, pt.size = 1,
+           file.name = "full_43p_celseq_integration/Second round of clustering/Refined mye pops UMAP.pdf")
 
-# Update colors
-tmp.col                 <- colorSpacer(startcolor = "grey", steps = 1)
-names(tmp.col)          <- "Other"
-full.refined.pop.colors <- c(M.int_refined.pop.colors, tmp.col)
+## Refine populations by deleting cells left out of the 'pure' myeloid analyses
+still.numbered        <- as.vector(Idents(integrated.full.seurat))
+names(still.numbered) <- names(Idents(integrated.full.seurat))
+still.numbered        <- still.numbered[still.numbered %in% c(6, 8, 14, 15, 22, 25, 27)]
+customUMAP(object = integrated.full.seurat, legend.pos = "right", plot.width = 20, pt.size = 1, cells = names(still.numbered), file.name =  "full_43p_celseq_integration/Second round of clustering/Refined mye pops remaining numbers UMAP.pdf")
 
-customUMAP(object = integrated.full.seurat, legend.pos = "right", plot.width = 20, cols = full.refined.pop.colors,
-           file.name = "full_43p_celseq_integration/First round of clustering/Refined mye pops UMAP.pdf")
+integrated.full.seurat <- subset(integrated.full.seurat, cells = names(still.numbered), invert = T)
+
+## Set up a new all inclusive color table
+other.colors        <- c("cornsilk2", "burlywood3", "aquamarine3", "cornsilk4", "aquamarine4", "deeppink", "chocolate2", "coral3", "antiquewhite", "darkslategray3", "deeppink3", "deeppink4")
+names(other.colors) <- levels(Idents(integrated.full.seurat))[14:25]
+full_set.colors     <- c(M.int_refined.pop.colors, other.colors)
+
+## Visualize
+customUMAP(object = integrated.full.seurat, legend.pos = "right", cols = full_set.colors, plot.width = 20, pt.size = 1, file.name =  "full_43p_celseq_integration/Second round of clustering/Refined mye pops cleaned UMAP.pdf")
 
 
+## Save the integrated seurat object
+saveRDS(integrated.full.seurat, "Seurat_Objects/full.43p_10X.integrated.seurat.RDS")
+#integrated.full.seurat <- readRDS(file = "Seurat_Objects/full.43p_10X.integrated.seurat.RDS")
