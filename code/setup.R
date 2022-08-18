@@ -1,6 +1,7 @@
 ## Install packages
-# install.packages(c("BiocManager", "devtools", "rmarkdown", "Rcpp", "RcppArmadillo", "xlsx))
+# install.packages(c("BiocManager", "devtools", "rmarkdown", "Rcpp", "RcppArmadillo", "xlsx"))
 # BiocManager::install(c("Seurat", "ggplot2", "patchwork", "dplyr", "reshape2", "pheatmap", "varhandle", "ggsci", "limma", "ggpubr", "AnnotationDbi", "org.Hs.eg.db", "msigdbr", "dittoSeq", "EGSEA", "biomaRt", "escape", "IRanges", "gage", "pcaMethods", "ggsignif","qusage"))
+# Sys.unsetenv("GITHUB_PAT")
 # devtools::install_github("mojaveazure/seurat-disk")
 # devtools::install_github("velocyto-team/velocyto.R")
 # remotes::install_github('satijalab/seurat-wrappers')
@@ -10,6 +11,7 @@
 # devtools::install_github('cole-trapnell-lab/leidenbase')
 # devtools::install_github('cole-trapnell-lab/monocle3')
 #
+# renv::activate()
 # renv::snapshot()
 
 
@@ -18,8 +20,10 @@ library(Seurat)
 library(ggplot2)
 library(patchwork)
 library(dplyr)
+library(plyr)
 library(reshape2)
 library(pheatmap)
+library(ggrepel)
 library(ggsci)
 library(SeuratDisk)
 library(limma)
@@ -27,6 +31,7 @@ library(ggpubr)
 library(AnnotationDbi)
 library(org.Hs.eg.db)
 library(EGSEA)
+library(GSEABase)
 library(biomaRt)
 library(velocyto.R)
 library(monocle3)
@@ -39,6 +44,8 @@ library(msigdbr)
 library(dittoSeq)
 library(rstatix)
 library(varhandle)
+library(rDGIdb)
+
 
 # Load custom functions
 source("code/functions.R")

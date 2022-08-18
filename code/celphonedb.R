@@ -1,16 +1,24 @@
 ## Export data for use with cellphonedb (pyhton)
 dir.create("cellphonedb_input", showWarnings = F)
+dir.create("cellphonedb_results", showWarnings = F)
+
+# Subset out cells of interest (i.e., all plaque cells plus the PBMC monocytes)
+LRI.cells <- WhichCells(integrated.full.seurat, expression = Tissue == "plaque")
+LRI.cells <- c(LRI.cells, WhichCells(integrated.full.seurat, idents = levels(Idents(integrated.full.seurat))[grep("Monocytes", levels(Idents(integrated.full.seurat)))]))
+LRI.cells.seurat <- subset(integrated.full.seurat, cells = LRI.cells)
+customUMAP(LRI.cells.seurat, cols = full_set.colors, plot.width = 20, pt.size = 1, file.name = "cellphonedb_results/Cellphone input UMAP.pdf", legend.pos = "right")
+customUMAP(LRI.cells.seurat, group.by = "Tissue", plot.width = 10, pt.size = 1, file.name = "cellphonedb_results/Cellphone input Tissue UMAP.pdf", legend.pos = "right")
 
 # Counts
-write.table(GetAssayData(integrated.full.seurat, assay = "RNA", slot = "data"), file = 'cellphonedb_input/matrix.txt', quote = F , sep = "\t")
+write.table(GetAssayData(LRI.cells.seurat, assay = "RNA", slot = "data"), file = 'cellphonedb_input/matrix.txt', quote = F , sep = "\t")
 
 # Save gene names
-write(x = rownames(GetAssayData(integrated.full.seurat, assay = "RNA", slot = "data")), file = "cellphonedb_input/features.tsv")
-write(x = colnames(GetAssayData(integrated.full.seurat, assay = "RNA", slot = "data")), file = "cellphonedb_input/barcodes.tsv")
+write(x = rownames(GetAssayData(LRI.cells.seurat, assay = "RNA", slot = "data")), file = "cellphonedb_input/features.tsv")
+write(x = colnames(GetAssayData(LRI.cells.seurat, assay = "RNA", slot = "data")), file = "cellphonedb_input/barcodes.tsv")
 
 # Metadata
-metaTable <- data.frame(Cell      = names(Idents(integrated.full.seurat)), 
-                        cell_type = Idents(integrated.full.seurat))
+metaTable <- data.frame(Cell      = names(Idents(LRI.cells.seurat)), 
+                        cell_type = Idents(LRI.cells.seurat))
 
 unique(metaTable$cell_type)
 head(metaTable)
@@ -20,12 +28,15 @@ metaTable$cell_type <- gsub(x = metaTable$cell_type, pattern = " |\\+|-", replac
 metaTable$cell_type <- gsub(x = metaTable$cell_type, pattern = "__",    replacement = "_")
 write.table(metaTable, file = "cellphonedb_input/metadata.table.txt", row.names = F, quote = F, sep = "\t")
 
+# Make a conversion table for idents
+cell_type_map <- data.frame(cpdb.ident = unique(metaTable$cell_type), seurat.ident = unique(Idents(LRI.cells.seurat)))
+
 # Marker genes
 # Run FindAllMarkers again to update it with the refined clusters, if needed
-integrated.full.seurat.markers <- FindAllMarkers(integrated.full.seurat, assay = "RNA", only.pos = TRUE, min.pct = 0.25, thresh = 0.25)
+LRI.cells.seurat.markers <- FindAllMarkers(LRI.cells.seurat, assay = "RNA", only.pos = TRUE, min.pct = 0.25, thresh = 0.25)
 
 # Keep sig DEGs, and clean up the names again
-fDEGs         <- subset(integrated.full.seurat.markers, p_val_adj < 0.1)
+fDEGs         <- subset(LRI.cells.seurat.markers, p_val_adj < 0.1)
 fDEGs$cluster <- gsub(x = fDEGs$cluster, pattern = " |\\+|-|\\.", replacement = "_")
 fDEGs$cluster <- gsub(x = fDEGs$cluster, pattern = "__",    replacement = "_")
 
@@ -40,28 +51,22 @@ unique(fDEGs$cluster)
 dir.create("cellphonedb_results/lig.rec.int", showWarnings = F)
 
 # Import results from cellphonedb
-cpdb.means <- read.table(file = "cellphonedb_results/significant_means.txt", row.names = 1, header = T, sep = "\t")
+cpdb.means <- read.table(file = "cellphonedb_input/DEG_analysis_out/significant_means.txt", row.names = 1, header = T, sep = "\t")
 
 # Keep only relevant interactions (involving at least 1 DEG)
-cpdb.relevant <- read.table(file = "cellphonedb_results/relevant_interactions.txt", row.names = 1, header = T, sep = "\t")
+cpdb.relevant <- read.table(file = "cellphonedb_input/DEG_analysis_out/relevant_interactions.txt", row.names = 1, header = T, sep = "\t")
 cpdb.relevant <- cpdb.means[row.names(cpdb.means) %in% row.names(cpdb.relevant),]
 
 # Get deconvolution of complexes
-cpdb.deconv <- read.table(file = "cellphonedb_results/deconvoluted.txt", header = T, sep = "\t")
+cpdb.deconv <- read.table(file = "cellphonedb_input/DEG_analysis_out/deconvoluted.txt", header = T, sep = "\t")
 cpdb.deconv <- cpdb.deconv[cpdb.deconv$id_cp_interaction %in% row.names(cpdb.relevant),]
 
 cpdb.relevant[is.na(cpdb.relevant)] <- 0
 cpdb.relevant[1:5,1:15]
 
-# Remove integrin interactions
-cpdb.relevant <- cpdb.relevant[cpdb.relevant$is_integrin == "False",]
+# Remove integrin interactions (meh let's keep 'em for now)
+# cpdb.relevant <- cpdb.relevant[cpdb.relevant$is_integrin == "False",]
 
-# Save all HLA interactions for later
-hla.cpdb.relevant <-cpdb.relevant[grep("HLA",cpdb.relevant$interacting_pair),]
-
-# Keep only top ranked interactions
-summary(cpdb.relevant$rank)
-cpdb.relevant <- cpdb.relevant[cpdb.relevant$rank < mean(cpdb.relevant$rank),]
 #===========================================================================================================================
 # Plot overall interactions
 # Shape the data for plotting
@@ -112,14 +117,17 @@ s.cpdb.relevant[index, "receptor"] <- s.cpdb.relevant[index,"partner_b"]
 # genes B is a receptor and its ligand gene a is a complex
 index <- which(receptor_b == TRUE & gene_a == "")
 s.cpdb.relevant[index, "ligand"] <- s.cpdb.relevant[index,"partner_a"]
-detach(s.cpdb.relevant)
 
+# Remove the 'no recptor pairs'
+index <-  which(receptor_a == FALSE & receptor_b == FALSE)
+s.cpdb.relevant <- s.cpdb.relevant[-index,]
+detach(s.cpdb.relevant)
 
 # Melt the 'frame using ligand and receptor info and the interaction scores (take -2 the length of the colname sbecause we appendend the ligand adn receptor columns to the end of the df)
 m.s.cpdb.relevant <- melt(s.cpdb.relevant, id.vars = c("ligand", "receptor"), measure.vars = c(12:(length(colnames(s.cpdb.relevant))-2)), variable.name = "cells", value.name = "interaction.score")
 tail(m.s.cpdb.relevant)
 
-# Subset pairs with significant interactions (>0)
+# Subset pairs with significant interactions (interaction score > 0)
 exp.m.s.cpdb.relevant <- m.s.cpdb.relevant[m.s.cpdb.relevant$interaction.score > 0,]
 dim(exp.m.s.cpdb.relevant)
 
@@ -149,24 +157,16 @@ exp.m.s.cpdb.relevant$ligand.cells   <- droplevels(as.factor(exp.m.s.cpdb.releva
 length(levels(exp.m.s.cpdb.relevant$receptor.cells))
 levels(exp.m.s.cpdb.relevant$receptor.cells)
 
-#Define colors for the subclusters
-subclus.colors <- c( "antiquewhite3", # ACTA2
-                     colorSpacer(startcolor = "goldenrod1", endcolor = "goldenrod4", steps = 6, return.colors = T), # CD3
-                     "darkolivegreen3", "darkolivegreen4", # Endo
-                     "darkorange1", "darkorange3", # NK
-                     colorSpacer(startcolor = "deepskyblue", endcolor = "blue4", steps = 7), # fullloid
-                     "deeppink", # mast
-                     "darkorchid1", "darkorchid3", # B
-                     "coral4") # FOXP3
+# Define colors for the subclusters
+subclus.colors <- full_set.colors
+
+# Sort approximately the same as the levels in our df for convenience, then order manually
+subclus.colors <- subclus.colors[sort(names(subclus.colors))]
+subclus.colors <- subclus.colors[names(subclus.colors)[c(1,3,5,4,7,2,8,9,6,10,14,11,12,13,15,16,17,18,19,20,21,22,23,24,25,26,27,28)]]
 names(subclus.colors) <- levels(exp.m.s.cpdb.relevant$ligand.cells)
 
-# Subset a bit for clarity
-summary(exp.m.s.cpdb.relevant$interaction.score)
-sub.exp.m.s.cpdb.relevant <- exp.m.s.cpdb.relevant[exp.m.s.cpdb.relevant$interaction.score > summary(exp.m.s.cpdb.relevant$interaction.score)[5],]
-sub.exp.m.s.cpdb.relevant <- exp.m.s.cpdb.relevant[exp.m.s.cpdb.relevant$interaction.score < 20,]
-
-# plot
-ggplot(sub.exp.m.s.cpdb.relevant, aes(x = ligand, y= interaction.score, col = receptor.cells)) +
+# Plot all interactions
+ggplot(exp.m.s.cpdb.relevant, aes(x = ligand, y= interaction.score, col = receptor.cells)) +
   geom_point(size = 2) +
   scale_fill_manual(values = subclus.colors, aesthetics = "col") +
   ggtitle(paste("ligands in receptor cells")) +
@@ -176,9 +176,9 @@ ggplot(sub.exp.m.s.cpdb.relevant, aes(x = ligand, y= interaction.score, col = re
         axis.text.x = element_text(angle = 45, hjust = 1),
         aspect.ratio = 1/5
   )
-ggsave("cellphonedb_results/All.ligands_in_receptor_cells.outliers_removed.subset.dots.pdf", width = 30, height = 10)
+ggsave("cellphonedb_results/All.ligands_in_receptor_cells.outliers_removed.subset.dots.pdf", width = 40, height = 10)
 
-ggplot(sub.exp.m.s.cpdb.relevant, aes(x = receptor, y= interaction.score, col = ligand.cells)) +
+ggplot(exp.m.s.cpdb.relevant, aes(x = receptor, y= interaction.score, col = ligand.cells)) +
   geom_point(size = 2) +
   scale_fill_manual(values = subclus.colors, aesthetics = "col") +
   ggtitle(paste("receptors in ligand cells")) +
@@ -188,9 +188,9 @@ ggplot(sub.exp.m.s.cpdb.relevant, aes(x = receptor, y= interaction.score, col = 
         axis.text.x = element_text(angle = 45, hjust = 1),
         aspect.ratio = 1/5
   )
-ggsave("cellphonedb_results/All.receptors_in_ligand_cells.outliers_removed.subset.dots.pdf", width = 30, height = 10)
+ggsave("cellphonedb_results/All.receptors_in_ligand_cells.outliers_removed.subset.dots.pdf", width = 40, height = 10)
 
-ggplot(sub.exp.m.s.cpdb.relevant, aes(x = ligand, y= interaction.score, col = ligand.cells)) +
+ggplot(exp.m.s.cpdb.relevant, aes(x = ligand, y= interaction.score, col = ligand.cells)) +
   geom_point(size = 2) +
   scale_fill_manual(values = subclus.colors, aesthetics = "col") +
   ggtitle(paste("ligands in ligand cells")) +
@@ -200,9 +200,9 @@ ggplot(sub.exp.m.s.cpdb.relevant, aes(x = ligand, y= interaction.score, col = li
         axis.text.x = element_text(angle = 45, hjust = 1),
         aspect.ratio = 1/5
   )
-ggsave("cellphonedb_results/All.ligands_in_ligand_cells.outliers_removed.subset.dots.pdf", width = 30, height = 10)
+ggsave("cellphonedb_results/All.ligands_in_ligand_cells.outliers_removed.subset.dots.pdf", width = 40, height = 10)
 
-ggplot(sub.exp.m.s.cpdb.relevant, aes(x = receptor, y= interaction.score, col = receptor.cells)) +
+ggplot(exp.m.s.cpdb.relevant, aes(x = receptor, y= interaction.score, col = receptor.cells)) +
   geom_point(size = 2) +
   scale_fill_manual(values = subclus.colors, aesthetics = "col") +
   ggtitle(paste("receptors in receptor cells")) +
@@ -212,380 +212,85 @@ ggplot(sub.exp.m.s.cpdb.relevant, aes(x = receptor, y= interaction.score, col = 
         axis.text.x = element_text(angle = 45, hjust = 1),
         aspect.ratio = 1/5
   )
-ggsave("cellphonedb_results/All.receptors_in_receptor_cells.outliers_removed.subset.dots.pdf", width = 30, height = 10)
-
-#===========================================================================================================================
-# Subset fullloid ligand interactions
-full.lig.cells <- levels(exp.m.s.cpdb.relevant$ligand.cells)[grep("mac|Foam", levels(exp.m.s.cpdb.relevant$ligand.cells))]
-exp.m.sig.full.lig.cpdb.relevant <- exp.m.s.cpdb.relevant[exp.m.s.cpdb.relevant$ligand.cells %in% full.lig.cells, ]
-head(exp.m.sig.full.lig.cpdb.relevant)
-
-# Check dimensions
-length(unique(exp.m.sig.full.lig.cpdb.relevant$ligand))
-length(unique(exp.m.sig.full.lig.cpdb.relevant$receptor))
-
-# And plot
-ggplot(exp.m.sig.full.lig.cpdb.relevant, aes(x = ligand, y= receptor, col = receptor.cells, size = interaction.score, shape = ligand.cells)) +
-  geom_point() +
-  geom_jitter() +
-  scale_fill_manual(values = subclus.colors, aesthetics = "col") +
-  ggtitle(paste("fullloid ligands")) +
-  theme_light() +
-  ylab("Receptors (in other cells)") +
-  xlab("Ligands (in fullloid cells)") +
-  theme(axis.line = element_blank(),
-        axis.text.x = element_text(angle = 45, hjust = 1), 
-        text = element_text(size = 16),
-        aspect.ratio = 1)
-ggsave("cellphonedb_results/fullloid.ligands.dots.pdf", width = 25, height = 25)
-
-# Subset a bit more for clarity
-summary(exp.m.sig.full.lig.cpdb.relevant$interaction.score)
-sub.exp.m.sig.full.lig.cpdb.relevant <- exp.m.sig.full.lig.cpdb.relevant[exp.m.sig.full.lig.cpdb.relevant$interaction.score > summary(exp.m.sig.full.lig.cpdb.relevant$interaction.score)[5],]
-
-summary(summary(exp.m.sig.full.lig.cpdb.relevant$ligand))
-sub.exp.m.sig.full.lig.cpdb.relevant <- sub.exp.m.sig.full.lig.cpdb.relevant[sub.exp.m.sig.full.lig.cpdb.relevant$ligand %in% names(summary(sub.exp.m.sig.full.lig.cpdb.relevant$ligand))[summary(summary(sub.exp.m.sig.full.lig.cpdb.relevant$ligand)) < 10],]
-
-# Check dimensions
-length(unique(sub.exp.m.sig.full.lig.cpdb.relevant$ligand))
-length(unique(sub.exp.m.sig.full.lig.cpdb.relevant$receptor))
-
-# And plot
-ggplot(sub.exp.m.sig.full.lig.cpdb.relevant, aes(x = ligand, y= receptor, col = receptor.cells, size = interaction.score, shape = ligand.cells)) +
-  geom_point() +
-  geom_jitter() +
-  scale_fill_manual(values = subclus.colors, aesthetics = "col") +
-  ggtitle(paste("fullloid ligands")) +
-  theme_light() +
-  ylab("Receptors (in other cells)") +
-  xlab("Ligands (in fullloid cells)") +
-  theme(axis.line = element_blank(),
-        axis.text.x = element_text(angle = 45, hjust = 1), 
-        text = element_text(size = 14),
-        aspect.ratio = 1)
-ggsave("cellphonedb_results/fullloid.ligands.subset.dots.pdf", width = 15, height = 15)
-
-
-#===========================================================================================================================
-# Subset fullloid receptor interactions
-full.rec.cells <- levels(exp.m.s.cpdb.relevant$receptor.cells)[grep("mac|Foam", levels(exp.m.s.cpdb.relevant$receptor.cells))]
-exp.m.sig.full.rec.cpdb.relevant <- exp.m.s.cpdb.relevant[exp.m.s.cpdb.relevant$receptor.cells %in% full.rec.cells, ]
-head(exp.m.sig.full.rec.cpdb.relevant)
-
-# Check dimensions
-length(unique(exp.m.sig.full.rec.cpdb.relevant$ligand))
-length(unique(exp.m.sig.full.rec.cpdb.relevant$receptor))
-
-# And plot
-ggplot(exp.m.sig.full.rec.cpdb.relevant, aes(x = ligand, y= receptor, col = ligand.cells, size = interaction.score, shape = receptor.cells)) +
-  geom_point() +
-  geom_jitter() +
-  scale_fill_manual(values = subclus.colors, aesthetics = "col") +
-  ggtitle(paste("fullloid receptors")) +
-  theme_light() +
-  ylab("Receptors (in fullloid cells)") +
-  xlab("Ligands (in other cells)") +
-  theme(axis.line = element_blank(),
-        axis.text.x = element_text(angle = 45, hjust = 1), 
-        text = element_text(size = 16),
-        aspect.ratio = 1)
-ggsave("cellphonedb_results/fullloid.receptors.dots.pdf", width = 25, height = 25)
-
-# Subset a bit more for clarity
-summary(exp.m.sig.full.rec.cpdb.relevant$interaction.score)
-sub.exp.m.sig.full.rec.cpdb.relevant <- exp.m.sig.full.rec.cpdb.relevant[exp.m.sig.full.rec.cpdb.relevant$interaction.score > summary(exp.m.sig.full.rec.cpdb.relevant$interaction.score)[5],]
-
-summary(summary(exp.m.sig.full.rec.cpdb.relevant$ligand))
-sub.exp.m.sig.full.rec.cpdb.relevant <- sub.exp.m.sig.full.rec.cpdb.relevant[sub.exp.m.sig.full.rec.cpdb.relevant$ligand %in% names(summary(sub.exp.m.sig.full.rec.cpdb.relevant$ligand))[summary(sub.exp.m.sig.full.rec.cpdb.relevant$ligand) < 20],]
-
-# Check dimensions
-length(unique(sub.exp.m.sig.full.rec.cpdb.relevant$ligand))
-length(unique(sub.exp.m.sig.full.rec.cpdb.relevant$receptor))
-
-# And plot
-ggplot(sub.exp.m.sig.full.rec.cpdb.relevant, aes(x = ligand, y= receptor, col = ligand.cells, size = interaction.score, shape = receptor.cells)) +
-  geom_point() +
-  geom_jitter() +
-  scale_fill_manual(values = subclus.colors, aesthetics = "col") +
-  ggtitle(paste("fullloid receptors")) +
-  theme_light() +
-  ylab("Receptors (in fullloid cells)") +
-  xlab("Ligands (in other cells)") +
-  theme(axis.line = element_blank(),
-        axis.text.x = element_text(angle = 45, hjust = 1), 
-        text = element_text(size = 16),
-        aspect.ratio = 1)
-ggsave("cellphonedb_results/fullloid.receptors.subset.dots.pdf", width = 15, height = 15)
-
-
-
+ggsave("cellphonedb_results/All.receptors_in_receptor_cells.outliers_removed.subset.dots.pdf", width = 40, height = 10)
 
 #=============================================================================================================
-# Investigate random interactions
-
-sub.exp.m.s.cpdb.relevant[grep("FAM3C", sub.exp.m.s.cpdb.relevant$receptor),][sub.exp.m.s.cpdb.relevant[grep("FAM3C", sub.exp.m.s.cpdb.relevant$receptor),"interaction.score"] > 15,]
-
-
+# PLot only from specific population (group) viewpoints
 #=============================================================================================================
-# PLot HLA interactions in general and in and with fullloid cells
-#=============================================================================================================
-#===========================================================================================================================
-# Plot overall interactions
-# Shape the data for plotting
-s.hla.spdb.means <- hla.cpdb.relevant
-s.hla.spdb.means[s.hla.spdb.means$receptor_a == "True", "receptor_a"] <- TRUE
-s.hla.spdb.means[s.hla.spdb.means$receptor_a == "False","receptor_a"] <- FALSE
-s.hla.spdb.means[s.hla.spdb.means$receptor_b == "True", "receptor_b"] <- TRUE
-s.hla.spdb.means[s.hla.spdb.means$receptor_b == "False","receptor_b"] <- FALSE
-s.hla.spdb.means[1:10,1:12]
-
-# Prep ligand and receptor name columns
-s.hla.spdb.means$ligand   <- "NA"
-s.hla.spdb.means$receptor <- "NA"
-
-#Eek out ligands and receptors using the 'is receptor' and gen info
-attach(s.hla.spdb.means)
-
-# First deal with the single gene entries
-# gene A is a receptor and not a complex
-index <- which(receptor_a == TRUE & gene_a != "")
-s.hla.spdb.means[index, "receptor"] <- s.hla.spdb.means[index,"gene_a"]
-
-# genes A is a receptor and its ligand gene b is not a complex
-index <- which(receptor_a == TRUE & gene_b != "")
-s.hla.spdb.means[index, "ligand"] <- s.hla.spdb.means[index,"gene_b"]
-
-# gene B is a receptor and not a complex
-index <- which(receptor_b == TRUE & gene_b != "")
-s.hla.spdb.means[index, "receptor"] <- s.hla.spdb.means[index,"gene_b"]
-
-# genes B is a receptor and its ligand gene a is not a complex
-index <- which(receptor_b == TRUE & gene_a != "")
-s.hla.spdb.means[index, "ligand"] <- s.hla.spdb.means[index,"gene_a"]
-
-# Now do the complex entries
-# gene A is a receptor and a complex
-index <- which(receptor_a == TRUE & gene_a == "")
-s.hla.spdb.means[index, "receptor"] <- s.hla.spdb.means[index,"partner_a"]
-
-# genes A is a receptor and its ligand gene b is a complex
-index <- which(receptor_a == TRUE & gene_b == "")
-s.hla.spdb.means[index, "ligand"] <- s.hla.spdb.means[index,"partner_b"]
-
-# gene B is a receptor and a complex
-index <- which(receptor_b == TRUE & gene_b == "")
-s.hla.spdb.means[index, "receptor"] <- s.hla.spdb.means[index,"partner_b"]
-
-# genes B is a receptor and its ligand gene a is a complex
-index <- which(receptor_b == TRUE & gene_a == "")
-s.hla.spdb.means[index, "ligand"] <- s.hla.spdb.means[index,"partner_a"]
-detach(s.hla.spdb.means)
-
-
-# Melt the 'frame using ligand and receptor info and the interaction scores (take -2 the length of the colname sbecause we appendend the ligand adn receptor columns to the end of the df)
-m.s.hla.spdb.means <- melt(s.hla.spdb.means, id.vars = c("ligand", "receptor"), measure.vars = c(12:(length(colnames(s.hla.spdb.means))-2)), variable.name = "cells", value.name = "interaction.score")
-tail(m.s.hla.spdb.means)
-
-# Subset pairs with significant interactions (>0)
-exp.m.s.hla.spdb.means <- m.s.hla.spdb.means[m.s.hla.spdb.means$interaction.score > 0,]
-dim(exp.m.s.hla.spdb.means)
-
-# Prep ligand and receptor cell names columns
-l <- vector()
-r <- vector()
-exp.m.s.hla.spdb.means$cells <- gsub(pattern = "ass.swi", replacement = "ass_swi", x = exp.m.s.hla.spdb.means$cells, fixed = T)
-for (i in strsplit(as.character(exp.m.s.hla.spdb.means$cells), split = ".", fixed = T)){
-  l <- c(l, i[1])
-  r <- c(r, i[2])
+## First just do from all to all populations
+dir.create( "cellphonedb_results/per_population", showWarnings = F, recursive = T)
+for(theIdent in unique(c(exp.m.s.cpdb.relevant$ligand.cells, exp.m.s.cpdb.relevant$receptor.cells))){
+  cat(paste("Working on: ", theIdent, "...\n", sep = ""))
+  custom_LRI_plots(save.dir = "cellphonedb_results/per_population", name = theIdent, sub.re = theIdent, subclus.colors = subclus.colors, verbose = T, top.score = 1)
 }
-exp.m.s.hla.spdb.means$ligand.cells <- l
-exp.m.s.hla.spdb.means$receptor.cells <- r
 
-nrow(exp.m.s.hla.spdb.means)
-head(exp.m.s.hla.spdb.means)
-tail(exp.m.s.hla.spdb.means)
+# Now check the myeloid populations
+custom_LRI_plots(save.dir = "cellphonedb_results/", name = "Myeloid", sub.re = "Mono|Macro", subclus.colors = subclus.colors, verbose = T, top.score = 1)
 
-# Clean up
-exp.m.s.hla.spdb.means$interaction.score <- as.numeric(exp.m.s.hla.spdb.means$interaction.score)
-exp.m.s.hla.spdb.means <- exp.m.s.hla.spdb.means[!is.na(exp.m.s.hla.spdb.means$interaction.score),]
+# Now check the resident populations
+custom_LRI_plots(save.dir = "cellphonedb_results/", name = "Resident", sub.re = "TREM2_FOLR2", subclus.colors = subclus.colors, verbose = T, top.score = 1)
 
-# Remove 'mixed cells' and 'My.4' sub clusters from the receptor and ligand cells as they are uninformative.
-#exp.m.s.hla.spdb.means <- exp.m.s.hla.spdb.means[grep("My.4|Mixed", exp.m.s.hla.spdb.means$receptor.cells, invert = T),]
-#exp.m.s.hla.spdb.means <- exp.m.s.hla.spdb.means[grep("My.4|Mixed", exp.m.s.hla.spdb.means$ligand.cells, invert = T),]
+# Now check the Foamy populations
+custom_LRI_plots(save.dir = "cellphonedb_results/", name = "Foamy", sub.re = "Foamy", subclus.colors = subclus.colors, verbose = T, top.score = 1)
 
-# Fix factors
-exp.m.s.hla.spdb.means$receptor       <- droplevels(as.factor(exp.m.s.hla.spdb.means$receptor))
-exp.m.s.hla.spdb.means$ligand         <- droplevels(as.factor(exp.m.s.hla.spdb.means$ligand))
-exp.m.s.hla.spdb.means$receptor.cells <- droplevels(as.factor(exp.m.s.hla.spdb.means$receptor.cells))
-exp.m.s.hla.spdb.means$ligand.cells   <- droplevels(as.factor(exp.m.s.hla.spdb.means$ligand.cells))
-length(levels(exp.m.s.hla.spdb.means$receptor.cells))
-levels(exp.m.s.hla.spdb.means$receptor.cells)
+# Now check the Inflammatory populations
+custom_LRI_plots(save.dir = "cellphonedb_results/", name = "Inflammatory", sub.re = "IL1B_SELL", subclus.colors = subclus.colors, verbose = T, top.score = 1)
 
-#Define colors for the subclusters
-subclus.colors <- c( "antiquewhite3", # ACTA2
-                     colorSpacer(startcolor = "goldenrod1", endcolor = "goldenrod4", steps = 6, return.colors = T), # CD3
-                     "darkolivegreen3", "darkolivegreen4", # Endo
-                     "darkorange1", "darkorange3", # NK
-                     colorSpacer(startcolor = "deepskyblue", endcolor = "blue4", steps = 5), # fullloid
-                     "deeppink", # mast
-                     "darkorchid1", "darkorchid3", # B
-                     "coral4") # FOXP3
-names(subclus.colors) <- levels(exp.m.s.hla.spdb.means$ligand.cells)
-
-# Subset a bit for clarity
-summary(exp.m.s.hla.spdb.means$interaction.score)
-sub.exp.m.s.hla.spdb.means <- exp.m.s.hla.spdb.means[exp.m.s.hla.spdb.means$interaction.score > summary(exp.m.s.hla.spdb.means$interaction.score)[5],]
-sub.exp.m.s.hla.spdb.means <- exp.m.s.hla.spdb.means[exp.m.s.hla.spdb.means$interaction.score < 20,]
-
-# plot
-ggplot(sub.exp.m.s.hla.spdb.means, aes(x = ligand, y= interaction.score, col = receptor.cells)) +
-  geom_point(size = 2) +
-  scale_fill_manual(values = subclus.colors, aesthetics = "col") +
-  ggtitle(paste("ligands in receptor cells")) +
-  ylab("Interaction score") +
-  theme_light() +
-  theme(axis.line = element_blank(),
-        axis.text.x = element_text(angle = 45, hjust = 1),
-        aspect.ratio = 1/5
-  )
-ggsave("cellphonedb_results/HLA.All.ligands_in_receptor_cells.outliers_removed.subset.dots.pdf", width = 10, height = 10)
-
-ggplot(sub.exp.m.s.hla.spdb.means, aes(x = receptor, y= interaction.score, col = ligand.cells)) +
-  geom_point(size = 2) +
-  scale_fill_manual(values = subclus.colors, aesthetics = "col") +
-  ggtitle(paste("receptors in ligand cells")) +
-  ylab("Interaction score") +
-  theme_light() +
-  theme(axis.line = element_blank(),
-        axis.text.x = element_text(angle = 45, hjust = 1),
-        aspect.ratio = 1/5
-  )
-ggsave("cellphonedb_results/HLA>All.receptors_in_ligand_cells.outliers_removed.subset.dots.pdf", width = 10, height = 10)
-
-ggplot(sub.exp.m.s.hla.spdb.means, aes(x = ligand, y= interaction.score, col = ligand.cells)) +
-  geom_point(size = 2) +
-  scale_fill_manual(values = subclus.colors, aesthetics = "col") +
-  ggtitle(paste("ligands in ligand cells")) +
-  ylab("Interaction score") +
-  theme_light() +
-  theme(axis.line = element_blank(),
-        axis.text.x = element_text(angle = 45, hjust = 1),
-        aspect.ratio = 1/5
-  )
-ggsave("cellphonedb_results/All.ligands_in_ligand_cells.outliers_removed.subset.dots.pdf", width = 10, height = 10)
-
-ggplot(sub.exp.m.s.hla.spdb.means, aes(x = receptor, y= interaction.score, col = receptor.cells)) +
-  geom_point(size = 2) +
-  scale_fill_manual(values = subclus.colors, aesthetics = "col") +
-  ggtitle(paste("receptors in receptor cells")) +
-  ylab("Interaction score") +
-  theme_light() +
-  theme(axis.line = element_blank(),
-        axis.text.x = element_text(angle = 45, hjust = 1),
-        aspect.ratio = 1/5
-  )
-ggsave("cellphonedb_results/All.receptors_in_receptor_cells.outliers_removed.subset.dots.pdf", width = 10, height = 10)
-
-#===========================================================================================================================
-# Subset fullloid ligand interactions
-full.lig.cells <- levels(exp.m.s.hla.spdb.means$ligand.cells)[grep("mac|Foam", levels(exp.m.s.hla.spdb.means$ligand.cells))]
-exp.m.sig.full.lig.hla.spdb.means <- exp.m.s.hla.spdb.means[exp.m.s.hla.spdb.means$ligand.cells %in% full.lig.cells, ]
-head(exp.m.sig.full.lig.hla.spdb.means)
-
-# Check dimensions
-length(unique(exp.m.sig.full.lig.hla.spdb.means$ligand))
-length(unique(exp.m.sig.full.lig.hla.spdb.means$receptor))
-
-# And plot
-ggplot(exp.m.sig.full.lig.hla.spdb.means, aes(x = ligand, y= receptor, col = receptor.cells, size = interaction.score, shape = ligand.cells)) +
-  geom_point() +
-  geom_jitter() +
-  scale_fill_manual(values = subclus.colors, aesthetics = "col") +
-  ggtitle(paste("fullloid ligands")) +
-  theme_light() +
-  ylab("Receptors (in other cells)") +
-  xlab("Ligands (in fullloid cells)") +
-  theme(axis.line = element_blank(),
-        axis.text.x = element_text(angle = 45, hjust = 1), 
-        text = element_text(size = 16),
-        aspect.ratio = 1)
-ggsave("cellphonedb_results/HLA.fullloid.ligands.dots.pdf", width = 10, height = 10)
-
-# Subset a bit more for clarity
-summary(exp.m.sig.full.lig.hla.spdb.means$interaction.score)
-sub.exp.m.sig.full.lig.hla.spdb.means <- exp.m.sig.full.lig.hla.spdb.means[exp.m.sig.full.lig.hla.spdb.means$interaction.score > summary(exp.m.sig.full.lig.hla.spdb.means$interaction.score)[5],]
-
-summary(summary(exp.m.sig.full.lig.hla.spdb.means$ligand))
-sub.exp.m.sig.full.lig.hla.spdb.means <- sub.exp.m.sig.full.lig.hla.spdb.means[sub.exp.m.sig.full.lig.hla.spdb.means$ligand %in% names(summary(sub.exp.m.sig.full.lig.hla.spdb.means$ligand))[summary(summary(sub.exp.m.sig.full.lig.hla.spdb.means$ligand)) < 10],]
-
-# Check dimensions
-length(unique(sub.exp.m.sig.full.lig.hla.spdb.means$ligand))
-length(unique(sub.exp.m.sig.full.lig.hla.spdb.means$receptor))
-
-# And plot
-ggplot(sub.exp.m.sig.full.lig.hla.spdb.means, aes(x = ligand, y= receptor, col = receptor.cells, size = interaction.score, shape = ligand.cells)) +
-  geom_point() +
-  geom_jitter() +
-  scale_fill_manual(values = subclus.colors, aesthetics = "col") +
-  ggtitle(paste("fullloid ligands")) +
-  theme_light() +
-  ylab("Receptors (in other cells)") +
-  xlab("Ligands (in fullloid cells)") +
-  theme(axis.line = element_blank(),
-        axis.text.x = element_text(angle = 45, hjust = 1), 
-        text = element_text(size = 14),
-        aspect.ratio = 1)
-ggsave("cellphonedb_results/HLA.fullloid.ligands.subset.dots.pdf", width = 15, height = 15)
+# Now check the monocyte populations
+custom_LRI_plots(save.dir = "cellphonedb_results/", name = "Monocytic", sub.re = "Monocytes", subclus.colors = subclus.colors, verbose = T, top.score = 1)
 
 
-#===========================================================================================================================
-# Subset fullloid receptor interactions
-full.rec.cells <- levels(exp.m.s.hla.spdb.means$receptor.cells)[grep("mac|Foam", levels(exp.m.s.hla.spdb.means$receptor.cells))]
-exp.m.sig.full.rec.hla.spdb.means <- exp.m.s.hla.spdb.means[exp.m.s.hla.spdb.means$receptor.cells %in% full.rec.cells, ]
-head(exp.m.sig.full.rec.hla.spdb.means)
+## Let's extract the lists per group also
+tail(exp.m.s.cpdb.relevant)
+## Per Population
+# Ligands
+for(theIdent in unique(exp.m.s.cpdb.relevant$ligand.cells)){
+  write.table(subset(exp.m.s.cpdb.relevant, ligand.cells == theIdent), file = paste("cellphonedb_results/per_population/", theIdent, "_ligand.interactions.txt", sep  = ""), 
+              row.names = F, quote = F, sep = "\t")
+}
+# Receptors
+for(theIdent in unique(exp.m.s.cpdb.relevant$receptor.cells)){
+  write.table(subset(exp.m.s.cpdb.relevant, receptor.cells == theIdent), file = paste("cellphonedb_results/per_population/", theIdent, "_receptor.interactions.txt", sep  = ""),
+              row.names = F, quote = F, sep = "\t")
+}
 
-# Check dimensions
-length(unique(exp.m.sig.full.rec.hla.spdb.means$ligand))
-length(unique(exp.m.sig.full.rec.hla.spdb.means$receptor))
+## Myeloid populations
+# Ligands
+write.table(exp.m.s.cpdb.relevant[grep("Mono|Macro", exp.m.s.cpdb.relevant$ligand.cells),], file = "cellphonedb_results/Myeloid_cells_ligand.interactions.txt", 
+            row.names = F, quote = F, sep = "\t")
+# Receptors
+write.table(exp.m.s.cpdb.relevant[grep("Mono|Macro", exp.m.s.cpdb.relevant$receptor.cells),], file = "cellphonedb_results/Myeloid_cells_receptor.interactions.txt", 
+            row.names = F, quote = F, sep = "\t")
 
-# And plot
-ggplot(exp.m.sig.full.rec.hla.spdb.means, aes(x = ligand, y= receptor, col = ligand.cells, size = interaction.score, shape = receptor.cells)) +
-  geom_point() +
-  geom_jitter() +
-  scale_fill_manual(values = subclus.colors, aesthetics = "col") +
-  ggtitle(paste("fullloid receptors")) +
-  theme_light() +
-  ylab("Receptors (in fullloid cells)") +
-  xlab("Ligands (in other cells)") +
-  theme(axis.line = element_blank(),
-        axis.text.x = element_text(angle = 45, hjust = 1), 
-        text = element_text(size = 16),
-        aspect.ratio = 1)
-ggsave("cellphonedb_results/HLA.fullloid.receptors.dots.pdf", width = 25, height = 25)
+## Resident populations
+# Ligands
+write.table(exp.m.s.cpdb.relevant[grep("TREM2_FOLR", exp.m.s.cpdb.relevant$ligand.cells),], file = "cellphonedb_results/Resident_cells_ligand.interactions.txt", 
+            row.names = F, quote = F, sep = "\t")
+# Receptors
+write.table(exp.m.s.cpdb.relevant[grep("TREM2_FOLR", exp.m.s.cpdb.relevant$receptor.cells),], file = "cellphonedb_results/Resident_cells_receptor.interactions.txt", 
+            row.names = F, quote = F, sep = "\t")
 
-# Subset a bit more for clarity
-summary(exp.m.sig.full.rec.hla.spdb.means$interaction.score)
-sub.exp.m.sig.full.rec.hla.spdb.means <- exp.m.sig.full.rec.hla.spdb.means[exp.m.sig.full.rec.hla.spdb.means$interaction.score > summary(exp.m.sig.full.rec.hla.spdb.means$interaction.score)[5],]
+## Foamy populations
+# Ligands
+write.table(exp.m.s.cpdb.relevant[grep("Foamy", exp.m.s.cpdb.relevant$ligand.cells),], file = "cellphonedb_results/Foamy_cells_ligand.interactions.txt", 
+            row.names = F, quote = F, sep = "\t")
+# Receptors
+write.table(exp.m.s.cpdb.relevant[grep("Foamy", exp.m.s.cpdb.relevant$receptor.cells),], file = "cellphonedb_results/Foamy_cells_receptor.interactions.txt", 
+            row.names = F, quote = F, sep = "\t")
 
-summary(summary(exp.m.sig.full.rec.hla.spdb.means$ligand))
-sub.exp.m.sig.full.rec.hla.spdb.means <- sub.exp.m.sig.full.rec.hla.spdb.means[sub.exp.m.sig.full.rec.hla.spdb.means$ligand %in% names(summary(sub.exp.m.sig.full.rec.hla.spdb.means$ligand))[summary(sub.exp.m.sig.full.rec.hla.spdb.means$ligand) < 20],]
+## Inflammatory populations
+# Ligands
+write.table(exp.m.s.cpdb.relevant[grep("IL1B_SELL", exp.m.s.cpdb.relevant$ligand.cells),], file = "cellphonedb_results/Inflammatory_cells_ligand.interactions.txt", 
+            row.names = F, quote = F, sep = "\t")
+# Receptors
+write.table(exp.m.s.cpdb.relevant[grep("IL1B_SELL", exp.m.s.cpdb.relevant$receptor.cells),], file = "cellphonedb_results/Inflammatory_cells_receptor.interactions.txt", 
+            row.names = F, quote = F, sep = "\t")
 
-# Check dimensions
-length(unique(sub.exp.m.sig.full.rec.hla.spdb.means$ligand))
-length(unique(sub.exp.m.sig.full.rec.hla.spdb.means$receptor))
-
-# And plot
-ggplot(sub.exp.m.sig.full.rec.hla.spdb.means, aes(x = ligand, y= receptor, col = ligand.cells, size = interaction.score, shape = receptor.cells)) +
-  geom_point() +
-  geom_jitter() +
-  scale_fill_manual(values = subclus.colors, aesthetics = "col") +
-  ggtitle(paste("fullloid receptors")) +
-  theme_light() +
-  ylab("Receptors (in fullloid cells)") +
-  xlab("Ligands (in other cells)") +
-  theme(axis.line = element_blank(),
-        axis.text.x = element_text(angle = 45, hjust = 1), 
-        text = element_text(size = 16),
-        aspect.ratio = 1)
-ggsave("cellphonedb_results/HLA.fullloid.receptors.subset.dots.pdf", width = 15, height = 15)
+## Monocyte populations
+# Ligands
+write.table(exp.m.s.cpdb.relevant[grep("Monocytes", exp.m.s.cpdb.relevant$ligand.cells),], file = "cellphonedb_results/Monocytic_cells_ligand.interactions.txt", 
+            row.names = F, quote = F, sep = "\t")
+# Receptors
+write.table(exp.m.s.cpdb.relevant[grep("Monocytes", exp.m.s.cpdb.relevant$receptor.cells),], file = "cellphonedb_results/Monocytic_cells_receptor.interactions.txt", 
+            row.names = F, quote = F, sep = "\t")
 

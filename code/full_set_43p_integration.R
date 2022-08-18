@@ -195,8 +195,8 @@ p1 + p2
 ggsave("full_43p_celseq_integration/First round of clustering/Integration 43p vs. 10X clusters UMAP.pdf", width = 20, height = 10)
 
 ## Save the integrated seurat object
-saveRDS(integrated.full.seurat, "Seurat_Objects/full.43p_10X.integrated.seurat.RDS")
-#integrated.full.seurat <- readRDS(file = "Seurat_Objects/full.43p_10X.integrated.seurat.RDS")
+saveRDS(integrated.full.seurat, "Seurat_Objects/full.43p_10X.integrated.seurat.backup.RDS")
+#integrated.full.seurat <- readRDS(file = "Seurat_Objects/full.43p_10X.integrated.seurat.backup.RDS")
 
 
 #==================================================================================================================================
@@ -241,6 +241,7 @@ customUMAP(object     = integrated.full.seurat, shuffle = T,
 
 
 ## Plot some marker genes
+DefaultAssay(integrated.full.seurat) <- "RNA"
 bunchOfCustomPlots(features   = c("CD3E", "CD4", "CD8A","FOXP3", "NCAM1", 
                                   "CD14", "CD68", "CD1C", "TREM2", "IL1B",
                                   "CD79A", "ACTA2", "CD34", "KIT", "OLR1" ), 
@@ -251,8 +252,35 @@ bunchOfCustomPlots(features   = c("CD3E", "CD4", "CD8A","FOXP3", "NCAM1",
                    Vln.height = 25
 )
 
+## Plot some t cell and NK genes
+bunchOfCustomPlots(features   = c("CD3E", "CD4", "CD8A", "FOXP3", "PTPRC", "CD27", "TRGC1", "TRGC2", "TRDC", "NCAM1", "KLRC1", "FCGR3A", "KLRD1", "CD79A", "CD14", "GNLY", "GZMB", "GZMA"), 
+                   object     = integrated.full.seurat,
+                   ncol       = 3,
+                   name       = "full_43p_celseq_integration/Second round of clustering/T Cell type defining genes",
+                   Vln.width  = 20, 
+                   Vln.height = 25
+)
+
+## Plot some t cell and NK genes
+bunchOfCustomPlots(features   = c("GYPA", "TFRC", "HBB"), 
+                   object     = integrated.full.seurat,
+                   ncol       = 3,
+                   name       = "full_43p_celseq_integration/Second round of clustering/Ery type defining genes",
+                   Vln.width  = 20, 
+                   Vln.height = 25
+)
+
+## Plot some t cell and NK genes
+bunchOfCustomPlots(features   = c("CD1C", "CLEC4A", "CLEC9A", "CLEC10A", "CD14","CD68","CD86", "FCGR2B", "FCER1A", "HLA-DQA2", "HLA-DQB2", "ITGAX"), 
+                   object     = integrated.full.seurat,
+                   ncol       = 3,
+                   name       = "full_43p_celseq_integration/Second round of clustering/DC type defining genes",
+                   Vln.width  = 20, 
+                   Vln.height = 25
+)
+
+
 ## Get markers per cluster
-DefaultAssay(integrated.full.seurat) <- "RNA"
 integrated.full.seurat.markers <- FindAllMarkers(integrated.full.seurat, assay = "RNA", only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25)
 
 # Save the top9 markers per cluster
@@ -278,21 +306,23 @@ integrated.full.seurat <- RenameIdents(integrated.full.seurat, "0"  = "CD4+ T Ce
                                                                "3"  = "CD8+ T Cells",
                                                                "4"  = "CD4+ T Cells",
                                                                "5"  = "CD8+ T Cells",
-                                                               "7"  = "CD56+ NK Cells II",
+                                                               "7"  = "CD56-CD16+ NK Cells",
+                                                               "9"  = "CD79+ Class-switched Memory B Cells",
                                                                "10" = "CD8+ T Cells",
                                                                "11" = "CD8+ T Cells",
                                                                "12" = "FOXP3+ T Cells",
-                                                               "13" = "CD56+ NK Cells",
+                                                               "13" = "CD56+KLRC1+ NK Cells",
+                                                               "15" = "CD1C+ cDC1",
                                                                "17" = "CD4+ T Cells",
                                                                "21" = "CD4+ T Cells",
-                                                               "9"  = "CD79+ Class-switched Memory B Cells",
                                                                "16" = "CD34+ Endothelial Cells",
                                                                "18" = "ACTA2+ Smooth Muscle Cells",
-                                                               "19" = "CD3+ T Cells",
-                                                               "20" = "CD3+ T Cells",
+                                                               "19" = "CD3+MKI67+ Proliferating T Cells",
+                                                               "20" = "GYPA+ Erythroid Cells",
                                                                "23" = "KIT+ Mast Cells",
                                                                "24" = "CD79+ Plasma B Cells",
-                                                               "26" = "CD79+ B Cells"
+                                                               "26" = "CD79+ B Cells",
+                                                               "27" = "CLEC9A+ cDC2"
                                                                )
 
 # Plot Clusters
@@ -337,11 +367,30 @@ names(still.numbered) <- names(Idents(integrated.full.seurat))
 still.numbered        <- still.numbered[still.numbered %in% c(6, 8, 14, 15, 22, 25, 27)]
 customUMAP(object = integrated.full.seurat, legend.pos = "right", plot.width = 20, pt.size = 1, cells = names(still.numbered), file.name =  "full_43p_celseq_integration/Second round of clustering/Refined mye pops remaining numbers UMAP.pdf")
 
+# Set idents
+integrated.full.seurat <- RenameIdents(integrated.full.seurat, "6"  = "CD14+CD16-CD64+SLAN- Classical Monocytes")
+customUMAP(object = integrated.full.seurat, legend.pos = "right", plot.width = 20, pt.size = 1, file.name =  "full_43p_celseq_integration/Second round of clustering/Refined mye pops added clas mons remaining numbers UMAP.pdf")
+
+# Remove left over cells
 integrated.full.seurat <- subset(integrated.full.seurat, cells = names(still.numbered), invert = T)
 
 ## Set up a new all inclusive color table
-other.colors        <- c("cornsilk2", "burlywood3", "aquamarine3", "cornsilk4", "aquamarine4", "deeppink", "chocolate2", "coral3", "antiquewhite", "darkslategray3", "deeppink3", "deeppink4")
-names(other.colors) <- levels(Idents(integrated.full.seurat))[14:25]
+levels(Idents(integrated.full.seurat))[14:length(levels(Idents(integrated.full.seurat)))]
+other.colors        <- c("CD4+ T Cells" = "cornsilk2", 
+                         "CD8+ T Cells" = "burlywood3", 
+                         "FOXP3+ T Cells" = "cornsilk4", 
+                         "CD3+MKI67+ Proliferating T Cells" = "antiquewhite1", 
+                         "CD79+ B Cells" = "deeppink3", 
+                         "CD79+ Class-switched Memory B Cells" = "deeppink", 
+                         "CD79+ Plasma B Cells" = "deeppink4", 
+                         "CD56-CD16+ NK Cells" = "aquamarine3", 
+                         "CD56+KLRC1+ NK Cells" = "aquamarine4", 
+                         "CD1C+ cDC1" = "darkgoldenrod1", 
+                         "CLEC9A+ cDC2" = "gold1", 
+                         "GYPA+ Erythroid Cells" = "coral",
+                         "KIT+ Mast Cells" = "coral3",
+                         "CD34+ Endothelial Cells" = "chocolate2",
+                         "ACTA2+ Smooth Muscle Cells" = "brown3")
 full_set.colors     <- c(M.int_refined.pop.colors, other.colors)
 
 ## Visualize
@@ -349,5 +398,5 @@ customUMAP(object = integrated.full.seurat, legend.pos = "right", cols = full_se
 
 
 ## Save the integrated seurat object
-saveRDS(integrated.full.seurat, "Seurat_Objects/full.43p_10X.integrated.seurat.RDS")
-#integrated.full.seurat <- readRDS(file = "Seurat_Objects/full.43p_10X.integrated.seurat.RDS")
+saveRDS(integrated.full.seurat, "Seurat_Objects/full.43p_10X.integrated.cleaned.seurat.RDS")
+#integrated.full.seurat <- readRDS(file = "Seurat_Objects/full.43p_10X.integrated.cleaned.seurat.RDS")

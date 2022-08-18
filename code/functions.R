@@ -1,3 +1,362 @@
+##========================================================================================================================
+## DGIdb drugability plots helper functions
+##========================================================================================================================
+shape.DGI.gene.pathway.overlap <- function(x = intersected.pathways.foamy.ont.unique.Mye.type.markers){
+  # First reduce the list of dataframes to a list of unqiue genes per pathway (we are now only interested in the gene/pathway count, not the drug count)
+  tmp.list <- list()
+  for(thePathway in names(x)){
+    tmp.list[[thePathway]] <- unique(x[[thePathway]]$Gene)
+  }
+  
+  # Get the maxium number of genes per pathway so we can pad out the df
+  n <- max(unlist(lapply(tmp.list, length)))
+  df <- data.frame(row.names = 1:n)
+  
+  # Add each list element vector of unique genes as a column of the new df, padding with NA as needed
+  for(thePathway in names(tmp.list)){
+    if(length(tmp.list[[thePathway]] < n)){
+      df[,thePathway] <- c(tmp.list[[thePathway]], rep(NA, (n - length(tmp.list[[thePathway]]))))
+    }else{
+      df[,thePathway] <- tmp.list[[thePathway]]
+    }
+  }
+  return(df)
+}
+
+concat.DGI.score_and_abundance <- function(x = intersected.pathways.foamy.ont.unique.Mye.type.markers){
+  # Prep the data
+  x <- do.call("rbind", x)[,1:3]
+  x$Pathway <- gsub("\\.[0-9]+", "", row.names(x))
+  row.names(x) <- NULL
+  x <- x[order(x$Gene, x$Pathway, x$Score, decreasing = T),]
+  
+  # Get high score per gene
+  d <- duplicated(x$Gene)
+  x.score <- x[!d,c(1,3)]
+  x.score$Score <- as.numeric(x.score$Score)
+  row.names(x.score) <- NULL
+  
+  # Get abundance of drugs per gene
+  x <- x[order(x$Gene, x$Drug, decreasing = T),]
+  x.abundance <- data.frame()
+  for(theGene in unique(x$Gene)){
+    s  <- subset(x, Gene == theGene)
+    df <- data.frame("Gene" = theGene, "Abundance" = length(unique(s$Drug)))
+    x.abundance <- rbind(x.abundance, df)
+  }
+  x.abundance$Abundance <- as.numeric(x.abundance$Abundance)
+  x <- merge(x.score, x.abundance, by = "Gene")
+  return(x)
+}
+
+##========================================================================================================================
+## Make DGIdb drugability plots
+##========================================================================================================================
+plot.DGI.results <- function(dgi.list = Mye.markers.dgi.filtered, n = 15, save.dir = "drugability_results/markers_plus_LRI_pairs", name = "potential drugs"){
+  for( i in names(dgi.list)){
+    m              <- dgi.list[[i]]
+    cat(paste(i,"\n"))
+    if(nrow(m != 0)){
+      m$Drug       <- factor(m$Drug, levels = rev(unique(m$Drug)))
+      m$Score      <- as.numeric(m$Score)
+      m            <- m[order(m$Score, decreasing = T),]
+      row.names(m) <- NULL # Reset row numbering
+      
+      # Check if we have n distinct genes
+      if(length(unique(m$Gene)) > n){
+        # Take top n unique genes from m. (Select on the first occurrence of n + 1, because if we select the last occurrence of n it breaks if gene[n]'s score is fragmented (not sorted together))
+        m <- m[1:row.names(head(m[m$Gene == unique(m$Gene)[(n + 1)],,drop = F], n = 1)),]
+        m <- m[1:(nrow(m) - 1),]  
+      }else if (length(unique(m$Gene)) <= n){
+        # Set n to the max number of genes we have, no need to alter m
+        n <- length(unique(m$Gene))
+      }
+      
+      m$GeneDrug <- paste(m$Gene, m$Drug, sep = " : ")
+      m$Gene     <- factor(m$Gene, levels = unique(m$Gene))
+      
+      # Plot top hits per cluster in a barplot
+      ggplot(m, aes(x = Drug, y = Score, fill = Score)) +
+        geom_bar(stat = "identity", position = "dodge") +
+        coord_flip() +
+        scale_fill_gradient(low = "dodgerblue", high = "coral") +
+        scale_x_discrete(breaks = m$Drug, labels = m$GeneDrug) +
+        xlab("Gene : Drug") +
+        ylab("Score") +
+        ggtitle(paste(i, "potential drugs")) +
+        theme(panel.background = element_blank(),
+              legend.position = "none",
+              axis.ticks.y     = element_blank(),
+              plot.margin      = unit(c(1,1,1,1), "cm"),
+              axis.text        = element_text(size = 14, face = "plain"), 
+              aspect.ratio     = 2/1
+        )
+      ggsave(paste(save.dir, "/Cluster ", i, " target ", name, " top ", n, " bars.pdf", sep = ""), width = 10)
+    
+      # Plot top hits per cluster in a dotplot
+      ggplot(m, aes(x = Gene, y = Drug, col = Score)) +
+        geom_point(size = 3) +
+        scale_color_gradient(low = "dodgerblue", high = "coral") +
+        xlab("Gene") +
+        ylab("Drug") +
+        ggtitle(paste(i, "potential drugs")) +
+        theme(panel.background = element_blank(),
+              axis.ticks.y     = element_blank(),
+              plot.margin      = unit(c(1,1,1,1), "cm"),
+              axis.text        = element_text(size = 14, face = "plain"),
+              axis.text.x      = element_text(angle = 45, hjust = 1),
+              aspect.ratio     = 1.5/1
+        )
+      ggsave(paste(save.dir, "/Cluster ", i, " target ", name, " top ", n, " dots.pdf", sep = ""), width = 10)
+    }
+  }
+}
+
+plot.DGI.summary <- function(x = intersected.pathways.foamy.ont.unique.Mye.type.markers.df.count_score_abundance, name = "Foamy populations", save.dir = "drugability_results/markers_plus_LRI_pairs"){
+  ggplot(x, aes(x = Count, y = Score)) +
+    geom_point(aes( size = Abundance, color = Aggregate)) +
+    theme_pubr(border = T, legend = "right") +
+    scale_color_continuous(name = "Aggregate score") +
+    scale_size_continuous(name = "# of drugs per target") +
+    ylab("DGIdb Score") +
+    xlab("# of enriched pathways per gene") +
+    theme(aspect.ratio = 1) +
+    ggtitle(paste(name, "drugable targets")) +
+    geom_label_repel(aes(label = Gene))
+  ggsave(paste(save.dir, "/Cluster ", name, " hits summary.pdf", sep = ""), width = 12, height = 8)
+}
+##========================================================================================================================
+## Make cellphonedb receptor ligand interaction plots
+##========================================================================================================================
+custom_LRI_plots <- function(object = exp.m.s.cpdb.relevant, save.dir = "cellphonedb_results", name = "my_lri", sub.re = NULL, subclus.colors = subclus.colors, top.score = 1, verbose = F){
+  ## First round check the ligands
+  if(verbose) cat("Plotting ligands...\n")
+  sub.object <- object[grep(sub.re, object$ligand.cells),]
+
+  # Plot all ligands and scores colored by receptor cells.
+  if(verbose) cat("  All ligands...\n")
+  ggplot(object, aes(x = ligand, y= interaction.score, col = receptor.cells)) +
+    geom_point(size = 2) +
+    geom_hline(yintercept = top.score, size = 0.5, col = "red") +
+    scale_fill_manual(values = subclus.colors, aesthetics = "col") +
+    ggtitle(paste(name, "cell ligands", sep = " ")) +
+    ylab("Interaction score") +
+    theme_pubr(border = T) +
+    theme(axis.line = element_blank(),
+          panel.border = element_rect(size = 0.5),
+          axis.text.x = element_text(angle = 45, hjust = 1),
+          aspect.ratio = 1/5
+    )
+  ggsave(paste(save.dir, "/", name, " cell plots - ALL ligands colored by receptor cell.pdf", sep = ""), width = 40, height = 10)
+  
+  # Filter: Keep only one instance of a ligand interacting with any 'sub.re' cells
+  if(verbose) cat("  Filtering...\n")
+  sub.object$receptor_int <- paste(sub.object$receptor, sub.object$receptor.cells, sep = ".")
+  sub.object <- sub.object[order(sub.object$receptor_int),]
+  d <- duplicated(sub.object$receptor_int)
+  sub.object <- sub.object[!d,]
+  
+  # Sort on score
+  sub.object <- sub.object[order(sub.object$interaction.score, decreasing = T),]
+
+  # Get the frequencies of interactions per population
+  sub.object.table <- sort(table(sub.object$receptor.cell), decreasing = T)
+
+  # Plot the frequency of interactions per population
+  if(verbose) cat("  Frequency of populations...\n")
+  m <- melt(sub.object.table)
+  colnames(m) <- c("Population", "Frequency")
+  ggplot(m, aes(x = Population, y = Frequency, fill = Population)) +
+    geom_bar(stat = "identity", position = position_dodge2()) +
+    scale_fill_manual(values = subclus.colors) + 
+    theme_pubr() +
+    ylab("# of receptors") +
+    xlab("Receptor population") +
+    ggtitle(paste("Receptors interacting with ligands from", name, "cells", sep = " ")) +
+    scale_y_continuous(limits = c(0,roundCeiling(max(as.vector(m$Frequency)))),expand = c(0,0)) +
+    theme(legend.position = "none",
+          axis.text.x = element_blank(),
+          axis.ticks.x = element_blank(),
+          aspect.ratio = 1)
+  ggsave(paste(save.dir, "/", name, " cell plots - Frequency of receptors interacting with ligands from ", name,  " cells per cell type.pdf", sep = ""))
+  
+  # Get the frequencies of receptors
+  sub.object.receptor.table <- sort(table(as.vector(sub.object$receptor)), decreasing = T)
+  
+  # Plot the frequency of receptors
+  if(verbose) cat("  Frequencies...\n")
+  m <- melt(sub.object.receptor.table)
+  colnames(m) <- c("Gene", "Frequency")
+  m <- m[!is.na(m$Gene),]
+  ggplot(m, aes(x = Gene, y = Frequency)) +
+    geom_bar(stat = "identity", position = position_dodge2()) +
+    theme_pubr() +
+    ylab("Frequency of receptor") +
+    xlab("Receptor") +
+    ggtitle(paste("Receptors interacting with ligands from", name, "cells", sep = " ")) +
+    scale_y_continuous(limits = c(0,roundCeiling(max(as.vector(m$Frequency)))), expand = c(0,0)) +
+    theme(legend.position = "right",
+          aspect.ratio = 1/7.5, 
+          axis.text.x = element_text(angle = 45, hjust = 1))
+  ggsave(paste(save.dir, "/", name, " cell plots - Frequency of receptors interacting with ligands from ", name,  " cells accumulative.pdf", sep = ""), width = 20, height = 8)
+  
+  # Plot all interactions
+  if(verbose) cat("  All interaction matrix...\n")
+  m <- melt(sub.object)
+  colnames(m)
+  m$variable  <- NULL
+  colnames(m) <- c(colnames(m)[1:6], "interaction.score")
+  ggplot(m, aes(x = ligand, y= receptor, col = receptor.cells, size = interaction.score)) +
+    geom_point() +
+    geom_jitter() +
+    scale_fill_manual(values = subclus.colors, aesthetics = "col") +
+    ggtitle(paste(name, "cell ligands", sep = " ")) +
+    theme_light() +
+    ylab("Receptors (in other cells)") +
+    xlab(paste("Ligands (in", name, "cells)", sep = " ")) +
+    theme(axis.line = element_blank(),
+          axis.text.x = element_text(angle = 45, hjust = 1), 
+          text = element_text(size = 16),
+          aspect.ratio = 1)
+  ggsave(paste(save.dir, "/", name, " cell plots - All ligands and receptors matrix ligand viewpoint.pdf", sep = ""), width = 25, height = 25)
+  
+  # Plot top scores only
+  if(verbose) cat("  Top score matrix...\n")
+  m <- melt(sub.object)
+  colnames(m)
+  m$variable  <- NULL
+  colnames(m) <- c(colnames(m)[1:6], "interaction.score")
+  m <- m[m$interaction.score > top.score,]
+  ggplot(m, aes(x = ligand, y= receptor, col = receptor.cells, size = interaction.score)) +
+    geom_point() +
+    geom_jitter() +
+    scale_fill_manual(values = subclus.colors, aesthetics = "col") +
+    ggtitle(paste(name, "cell ligands", sep = " "), subtitle = paste("interaction scores >", top.score, sep = "")) +
+    theme_light() +
+    ylab("Receptors (in other cells)") +
+    xlab(paste("Ligands (in", name, "cells)", sep = " ")) +
+    theme(axis.line = element_blank(),
+          axis.text.x = element_text(angle = 45, hjust = 1), 
+          text = element_text(size = 16),
+          aspect.ratio = 1)
+  ggsave(paste(save.dir, "/", name, " cell plots - Interaction score over ", top.score, " - ligands and receptors matrix ligand viewpoint.pdf", sep = ""), width = 25, height = 25)
+  
+  
+  #=============================================================================================================
+  ## Second round check the receptors
+  if(verbose) cat("\nPlotting receptors...\n")
+  sub.object <- object[grep(sub.re, object$receptor.cells),]
+
+  # Plot all receptors and scores colored by ligand cells.
+  if(verbose) cat("  All receptors...\n")
+  ggplot(object, aes(x = receptor, y= interaction.score, col = ligand.cells)) +
+    geom_point(size = 2) +
+    geom_hline(yintercept = top.score, size = 0.5, col = "red") +
+    scale_fill_manual(values = subclus.colors, aesthetics = "col") +
+    ggtitle(paste(name, "cell receptors", sep = " ")) +
+    ylab("Interaction score") +
+    theme_pubr(border = T) +
+    theme(axis.line = element_blank(),
+          panel.border = element_rect(size = 0.5),
+          axis.text.x = element_text(angle = 45, hjust = 1),
+          aspect.ratio = 1/5
+    )
+  ggsave(paste(save.dir, "/", name, " cell plots - ALL receptors colored by ligand cell.pdf", sep = ""), width = 40, height = 10)
+  
+  # Filter: Keep only one instance of a ligand interacting with any 'sub.re' cells
+  if(verbose) cat("  Filtering...\n")
+  sub.object$ligand_int <- paste(sub.object$ligand, sub.object$ligand.cells, sep = ".")
+  sub.object <- sub.object[order(sub.object$ligand_int),]
+  d <- duplicated(sub.object$ligand_int)
+  sub.object <- sub.object[!d,]
+  
+  # Sort on score
+  sub.object <- sub.object[order(sub.object$interaction.score, decreasing = T),]
+  
+  # Get the frequencies of interactions per population
+  sub.object.table <- sort(table(sub.object$ligand.cell), decreasing = T)
+  
+  # Plot the frequency of interactions per population
+  if(verbose) cat("  Frequencies per population...\n")
+  m <- melt(sub.object.table)
+  colnames(m) <- c("Population", "Frequency")
+  ggplot(m, aes(x = Population, y = Frequency, fill = Population)) +
+    geom_bar(stat = "identity", position = position_dodge2()) +
+    scale_fill_manual(values = subclus.colors) + 
+    theme_pubr() +
+    ylab("# of ligands") +
+    xlab("Ligand population") +
+    ggtitle(paste("Ligands interacting with receptors on", name, "cells", sep = " ")) +
+    scale_y_continuous(limits = c(0,roundCeiling(max(as.vector(m$Frequency)))),expand = c(0,0)) +
+    theme(legend.position = "none",
+          axis.text.x = element_blank(),
+          axis.ticks.x = element_blank(),
+          aspect.ratio = 1)
+  ggsave(paste(save.dir, "/", name, " cell plots - Frequency of ligands interacting with receptors from ", name,  " cells per cell type.pdf", sep = ""))
+  
+  # Get the frequencies of ligands
+  sub.object.ligand.table <- sort(table(as.vector(sub.object$ligand)), decreasing = T)
+  
+  # Plot the frequency of receptors
+  if(verbose) cat("  Frequencies...\n")
+  m <- melt(sub.object.ligand.table)
+  colnames(m) <- c("Gene", "Frequency")
+  m <- m[!is.na(m$Gene),]
+  ggplot(m, aes(x = Gene, y = Frequency)) +
+    geom_bar(stat = "identity", position = position_dodge2()) +
+    theme_pubr() +
+    ylab("Frequency of ligand") +
+    xlab("Ligand") +
+    ggtitle(paste("Ligands interacting with receptors from", name, "cells", sep = " ")) +
+    scale_y_continuous(limits = c(0,roundCeiling(max(as.vector(m$Frequency)))), expand = c(0,0)) +
+    theme(legend.position = "right",
+          aspect.ratio = 1/7.5, 
+          axis.text.x = element_text(angle = 45, hjust = 1))
+  ggsave(paste(save.dir, "/", name, " cell plots - Frequency of ligands interacting with receptors from ", name,  " cells accumulative.pdf", sep = ""), width = 20, height = 8)
+  
+  # Plot all interactions
+  if(verbose) cat("  All interaction matrix...\n")
+  m <- melt(sub.object)
+  colnames(m)
+  m$variable  <- NULL
+  colnames(m) <- c(colnames(m)[1:6], "interaction.score")
+  ggplot(m, aes(x = ligand, y= receptor, col = ligand.cells, size = interaction.score)) +
+    geom_point() +
+    geom_jitter() +
+    scale_fill_manual(values = subclus.colors, aesthetics = "col") +
+    ggtitle(paste(name, "cell receptors", sep = " ")) +
+    theme_light() +
+    ylab(paste("Receptors (in", name, "cells)", sep = " ")) +
+    xlab("Ligands (in other cells)") +
+    theme(axis.line = element_blank(),
+          axis.text.x = element_text(angle = 45, hjust = 1), 
+          text = element_text(size = 16),
+          aspect.ratio = 1)
+  ggsave(paste(save.dir, "/", name, " cell plots - All ligands and receptors matrix receptor viewpoint.pdf", sep = ""), width = 25, height = 25)
+  
+  # Plot top scores only
+  if(verbose) cat("  Top score matrix...\n\n")
+  m <- melt(sub.object)
+  colnames(m)
+  m$variable  <- NULL
+  colnames(m) <- c(colnames(m)[1:6], "interaction.score")
+  m <- m[m$interaction.score > top.score,]
+  ggplot(m, aes(x = ligand, y= receptor, col = ligand.cells, size = interaction.score)) +
+    geom_point() +
+    geom_jitter() +
+    scale_fill_manual(values = subclus.colors, aesthetics = "col") +
+    ggtitle(paste(name, "cell receptors", sep = " "), subtitle = paste("interaction scores >", top.score, sep = "")) +
+    theme_light() +
+    ylab(paste("Receptors (in", name, "cells)", sep = " ")) +
+    xlab("Ligands (in other cells)") +
+    theme(axis.line = element_blank(),
+          axis.text.x = element_text(angle = 45, hjust = 1), 
+          text = element_text(size = 16),
+          aspect.ratio = 1)
+  ggsave(paste(save.dir, "/", name, " cell plots - Interaction score over ", top.score, " - ligands and receptors matrix receptor viewpoint.pdf", sep = ""), width = 25, height = 25)
+}
+
+
 #=========================================================================================================================
 ## Cehck if a charcter string can be interpreted as a date
 ##========================================================================================================================

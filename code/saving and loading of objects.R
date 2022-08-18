@@ -39,6 +39,22 @@ dir.create("Seurat_Objects", showWarnings = F)
 # # Plaque only macrophages seurat object
 # saveRDS(plaque.macrophages.seurat, "Seurat_Objects/plaque.macrophages.seurat.RDS")
 #
+# # Integrated 43 patietns cel-seq and 10X myeloid cells seurat object
+# saveRDS(integrated.mye.seurat, "Seurat_Objects/mye.43p_10X.integrated.seurat.RDS")
+#
+# # Full set 43 patients cel-seq and 10X cells seurat object
+# saveRDS(integrated.full.seurat, "Seurat_Objects/full.43p_10X.integrated.seurat.RDS")
+#
+# # Full set 43 patients cel-seq and 10X cells cleaned and idents resolved seurat object
+# saveRDS(integrated.full.seurat, "Seurat_Objects/full.43p_10X.integrated.cleaned.seurat.RDS")
+#
+# # ssGSEA data ran on mye.integrated.seurat
+# saveRDS(ssGSEA.integrated.mye.seurat, "Seurat_Objects/ssGSEA_data.43p_10X.integrated.RDS")
+#
+# # Myeloid cells refined Seurat object
+# saveRDS(mye.patients.seurat, "Seurat_Objects/myeloid.cells.refined.seurat.RDS")
+#
+#
 # ## Marker genes
 # # All markers from all patients and idents
 # saveRDS(all.patients.seurat.markers, "Seurat_Objects/main.patients.markers.RDS")
@@ -49,17 +65,8 @@ dir.create("Seurat_Objects", showWarnings = F)
 # # Plaque macrophage markers
 # saveRDS(plaque.macrophages.seurat.markers, "Seurat_Objects/plaque.macrophages.markers.RDS")
 # 
-# # Myeloid cells refined Seurat object
-# saveRDS(mye.patients.seurat, "Seurat_Objects/myeloid.cells.refined.seurat.RDS")
-#
-# # Integrated 43 patietns cel-seq and 10X myeloid cells seurat object
-# saveRDS(integrated.mye.seurat, "Seurat_Objects/mye.43p_10X.integrated.seurat.RDS")
-#
-# # Full set 43 patients cel-seq and 10X cells seurat object
-# saveRDS(integrated.full.seurat, "Seurat_Objects/full.43p_10X.integrated.seurat.RDS")
-#
-# # ssGSEA data ran on mye.integrated.seurat
-# saveRDS(ssGSEA.integrated.mye.seurat, "Seurat_Objects/ssGSEA_data.43p_10X.integrated.RDS")
+# # Integrated myeloid markers
+# saveRDS(integrated.mye.seurat.markers, file = "Seurat_Objects/integrated.mye.seurat.markers")
 #
 #
 # ## Gene Ontologies
@@ -72,8 +79,14 @@ dir.create("Seurat_Objects", showWarnings = F)
 # saveRDS(ctrl.combined,         "Seurat_Objects/control.combined.Wang.seurat.RDS")
 # saveRDS(ctrl_patient.combined, "Seurat_Objects/control_patient.combined.Wang.seurat.RDS")
 # 
+# ## Color Objects
+# saveRDS(full_set.colors,          file = "Seurat_Objects/full_set.colors.RDS")
+# saveRDS(M.int_refined.pop.colors, file = "Seurat_Objects/M.int_refined.pop.colors.RDS")
+#
 # ## Random odds and ends
-# saveRDS(vars.to.regress, "Seurat_Objects/vars.to.regress.Rds")
+# saveRDS(vars.to.regress,       file = "Seurat_Objects/vars.to.regress.Rds")
+# saveRDS(Mye.markers.dgi,       file = "Seurat_Objects/mye_markers.DGI_object.RDS")
+# saveRDS(exp.m.s.cpdb.relevant, file = "Seurat_Objects/cpdb_results.clean.RDS")
 
 
 #=================================================================================================================================
@@ -121,15 +134,19 @@ integrated.mye.seurat <- readRDS(file = "Seurat_Objects/mye.43p_10X.integrated.s
 # Full set 43 patients cel-seq and 10X cells seurat object
 integrated.full.seurat <- readRDS(file = "Seurat_Objects/full.43p_10X.integrated.seurat.RDS")
 
+# Full set 43 patients cel-seq and 10X cells cleaned and idents resolved seurat object
+integrated.full.seurat <- readRDS(file = "Seurat_Objects/full.43p_10X.integrated.cleaned.seurat.RDS")
+
 # ssGSEA data ran on mye.integrated.seurat
 ssGSEA.integrated.mye.seurat <- readRDS(file = "Seurat_Objects/ssGSEA_data.43p_10X.integrated.RDS")
 
 
 ## Marker genes
 # All markers from all patients and idents
-all.patients.seurat.markers    <- readRDS(file = "Seurat_Objects/main.patients.markers.RDS")
-pbmc.monocytes.seurat.markers <- readRDS(file = "Seurat_Objects/PBMC.monocytes.markers.RDS")
+all.patients.seurat.markers       <- readRDS(file = "Seurat_Objects/main.patients.markers.RDS")
+pbmc.monocytes.seurat.markers     <- readRDS(file = "Seurat_Objects/PBMC.monocytes.markers.RDS")
 plaque.macrophages.seurat.markers <- readRDS(file = "Seurat_Objects/plaque.macrophages.markers.RDS")
+integrated.mye.seurat.markers     <- readRDS(file = "Seurat_Objects/integrated.mye.seurat.markers")
 
 ## Gene Ontologies
 
@@ -142,4 +159,13 @@ ctrl.combined         <- readRDS(file = "Seurat_Objects/control.combined.Wang.se
 ctrl_patient.combined <- readRDS(file = "Seurat_Objects/control_patient.combined.Wang.seurat.RDS")
 
 ## Random odds and ends
-vars.to.regress <- readRDS(file = "Seurat_Objects/vars.to.regress.Rds")
+vars.to.regress       <- readRDS(file = "Seurat_Objects/vars.to.regress.Rds")
+Mye.markers.dgi       <- readRDS(file = "Seurat_Objects/mye_markers.DGI_object.RDS")
+Mye.type.markers.dgi  <- readRDS(file = "Seurat_Objects/mye_type.markers.DGI_object.RDS")
+Mye.markers.dgi       <- readRDS(file = "Seurat_Objects/mye_markers_plus_LRI.DGI_object.RDS")
+Mye.type.markers.dgi  <- readRDS(file = "Seurat_Objects/mye_type.markers_plus_LRI.DGI_object.RDS")
+exp.m.s.cpdb.relevant <- readRDS(file = "Seurat_Objects/cpdb_results.clean.RDS")
+
+## Color Objects
+full_set.colors          <- readRDS(file = "Seurat_Objects/full_set.colors.RDS")
+M.int_refined.pop.colors <- readRDS(file = "Seurat_Objects/M.int_refined.pop.colors.RDS")
