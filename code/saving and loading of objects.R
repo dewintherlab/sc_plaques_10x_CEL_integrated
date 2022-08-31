@@ -48,6 +48,9 @@ dir.create("Seurat_Objects", showWarnings = F)
 # # Full set 43 patients cel-seq and 10X cells cleaned and idents resolved seurat object
 # saveRDS(integrated.full.seurat, "Seurat_Objects/full.43p_10X.integrated.cleaned.seurat.RDS")
 #
+# # From Full set 43 patients cel-seq and 10X cells cleaned and idents resolved myeloid  seurat object
+# saveRDS(from_full.integrated.mye.seurat, "Seurat_Objects/from_full.43p_10X.integrated.cleaned.mye.seurat.RDS")
+#
 # # ssGSEA data ran on mye.integrated.seurat
 # saveRDS(ssGSEA.integrated.mye.seurat, "Seurat_Objects/ssGSEA_data.43p_10X.integrated.RDS")
 #
@@ -136,6 +139,9 @@ integrated.full.seurat <- readRDS(file = "Seurat_Objects/full.43p_10X.integrated
 
 # Full set 43 patients cel-seq and 10X cells cleaned and idents resolved seurat object
 integrated.full.seurat <- readRDS(file = "Seurat_Objects/full.43p_10X.integrated.cleaned.seurat.RDS")
+
+# From Full set 43 patients cel-seq and 10X cells cleaned and idents resolved myeloid  seurat object
+from_full.integrated.mye.seurat <- readRDS(file = "Seurat_Objects/from_full.43p_10X.integrated.cleaned.mye.seurat.RDS")
 
 # ssGSEA data ran on mye.integrated.seurat
 ssGSEA.integrated.mye.seurat <- readRDS(file = "Seurat_Objects/ssGSEA_data.43p_10X.integrated.RDS")

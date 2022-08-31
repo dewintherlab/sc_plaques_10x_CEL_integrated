@@ -1,6 +1,6 @@
 ## Install packages
 # install.packages(c("BiocManager", "devtools", "rmarkdown", "Rcpp", "RcppArmadillo", "xlsx"))
-# BiocManager::install(c("Seurat", "ggplot2", "patchwork", "dplyr", "reshape2", "pheatmap", "varhandle", "ggsci", "limma", "ggpubr", "AnnotationDbi", "org.Hs.eg.db", "msigdbr", "dittoSeq", "EGSEA", "biomaRt", "escape", "IRanges", "gage", "pcaMethods", "ggsignif","qusage"))
+# BiocManager::install(c("Seurat", "Signac", "ggplot2", "patchwork", "dplyr", "reshape2", "pheatmap", "varhandle", "ggsci", "limma", "ggpubr", "AnnotationDbi", "org.Hs.eg.db", "msigdbr", "dittoSeq", "EGSEA", "biomaRt", "escape", "IRanges", "gage", "pcaMethods", "ggsignif","qusage"))
 # Sys.unsetenv("GITHUB_PAT")
 # devtools::install_github("mojaveazure/seurat-disk")
 # devtools::install_github("velocyto-team/velocyto.R")
@@ -17,6 +17,7 @@
 
 ## Load Packages
 library(Seurat)
+library(Signac)
 library(ggplot2)
 library(patchwork)
 library(dplyr)

@@ -4,8 +4,9 @@
 dir.create("from_full_myeloid_43p_celseq_integration/")
 
 # Subset the object
-from_full.integrated.mye.seurat <- subset(integrated.full.seurat, cells = mye.cells)
+from_full.integrated.mye.seurat <- subset(integrated.full.seurat, cells = WhichCells(integrated.full.seurat, idents = names(M.int_refined.pop.colors)))
 from_full.integrated.mye.seurat
+Idents(from_full.integrated.mye.seurat) <- factor(x = Idents(from_full.integrated.mye.seurat), levels = names(M.int_refined.pop.colors))
 
 # Plot it! (to verify)
 customUMAP(object = from_full.integrated.mye.seurat, cols = M.int_refined.pop.colors, 
@@ -18,7 +19,9 @@ from_full.integrated.mye.seurat <- RunUMAP(from_full.integrated.mye.seurat, verb
 
 # Plot it! (to verify)
 customUMAP(object = from_full.integrated.mye.seurat, cols = M.int_refined.pop.colors, 
-           file.name = "from_full_myeloid_43p_celseq_integration/Population UMAP.pdf", plot.width = 15, legend.pos = "right")
+           file.name = "from_full_myeloid_43p_celseq_integration/Population UMAP.pdf", plot.width = 20, legend.pos = "right", pt.size = 3, shuffle = T)
+customUMAP(object = from_full.integrated.mye.seurat, cols = M.int_refined.pop.colors, 
+           file.name = "from_full_myeloid_43p_celseq_integration/Population UMAP no legend.pdf", plot.width = 10, legend.pos = "none", pt.size = 3, shuffle = T)
 
 
 ## Run monocle

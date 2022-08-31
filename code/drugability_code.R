@@ -491,4 +491,40 @@ plot.DGI.results(dgi.list = tmp.list,
                 save.dir  = "drugability_results/markers_plus_LRI_pairs/pathway_drugable_gene_intersection",
                 name      = "Aggregate Score top 10 genes")
 
+##========================================================
+## Plot the follow up candidates
+##========================================================
 
+# All together
+bunchOfCustomPlots(object         = integrated.mye.seurat, 
+                   features       = c("ITGA4", "RARA", "ALOX5", "AKR1B1"), 
+                   assay          = "RNA", 
+                   Vln.draw.names = F, 
+                   Vln.color      = M.int_refined.pop.colors, 
+                   ncol           = 2, 
+                   name           = "drugability_results/markers_plus_LRI_pairs/follow_up_targets")
+
+bunchOfCustomPlots(object         = pbmc.monocytes.seurat, 
+                   features       = c("ITGA4", "RARA", "ALOX5", "AKR1B1"), 
+                   Vln.draw.names = F, 
+                   Vln.color      = M_refined.pop.colors, 
+                   ncol           = 2, 
+                   name           = "drugability_results/markers_plus_LRI_pairs/follow_up_targets_plus_monos")
+
+bunchOfCustomPlots(object         = from_full.integrated.mye.seurat, 
+                   features       = c("ITGA4", "RARA", "ALOX5", "AKR1B1"), 
+                   Vln.draw.names = F, 
+                   Vln.color      = M.int_refined.pop.colors, 
+                   ncol           = 2, 
+                   name           = "drugability_results/markers_plus_LRI_pairs/follow_up_targets_integrated_monos")
+
+
+# Per gene stratified
+for(theGene in c("ITGA4", "RARA", "ALOX5", "AKR1B1")){
+  stratifyByExpression(object        = integrated.mye.seurat, 
+                       strat.by      = theGene, 
+                       file.name     = paste("drugability_results/markers_plus_LRI_pairs/follow_up_targets ", theGene, ".pdf", sep = ""), 
+                       return.object = F, 
+                       do.plot       = T, 
+                       verbose       = T)
+}

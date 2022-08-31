@@ -1839,23 +1839,24 @@ integrated.mye.seurat <- RenameIdents(integrated.mye.seurat,
 M.int_refined.pops <- levels(Idents(integrated.mye.seurat))
 
 # Inflammatory Mo-Macs
-M.int_refined.pop.colors        <- colorSpacer(startcolor = "firebrick4", endcolor = "goldenrod3", steps = 4, return.colors = T)
+M.int_refined.pop.colors        <- colorSpacer(startcolor = "goldenrod3", endcolor = "firebrick4", steps = 4, return.colors = T)
 names(M.int_refined.pop.colors) <- M.int_refined.pops[grep(" Mono", M.int_refined.pops)]
 
 # Foamy Cells
 tmp.names                       <- names(M.int_refined.pop.colors)
-M.int_refined.pop.colors        <- c(M.int_refined.pop.colors, colorSpacer(startcolor = "plum1", endcolor = "darkslateblue", steps = 3, return.colors = T))
+M.int_refined.pop.colors        <- c(M.int_refined.pop.colors, colorSpacer(startcolor = "darkslateblue", endcolor = "plum1", steps = 3, return.colors = T))
 names(M.int_refined.pop.colors) <- c(tmp.names, M.int_refined.pops[grep("Foamy", M.int_refined.pops)])
 
 # Res Macs
 tmp.names                       <- names(M.int_refined.pop.colors)
-M.int_refined.pop.colors        <- c(M.int_refined.pop.colors, colorSpacer(startcolor = "chartreuse1", endcolor = "chartreuse4", steps = 3, return.colors = T))
+M.int_refined.pop.colors        <- c(M.int_refined.pop.colors, colorSpacer(startcolor = "chartreuse4", endcolor = "chartreuse1", steps = 3, return.colors = T))
 names(M.int_refined.pop.colors) <- c(tmp.names, M.int_refined.pops[grep("Resident|ABCG", M.int_refined.pops)])
 
 length(M.int_refined.pop.colors)
 
 # Add mono colors
 M.int_refined.pop.colors <- c(M_refined.pop.colors[1:3], M.int_refined.pop.colors)
+
 
 ## Add updated numbered clustered metadata for violins
 tmp.idents <- integrated.mye.seurat$method.int.idents.pre.merge
