@@ -135,6 +135,10 @@ for(theIdent in names(Mye.markers)[grep("SELL", names(Mye.markers))]){
   Mye.type.markers[["Inflammatory"]] <- unique(c(Mye.type.markers[["Inflammatory"]], Mye.markers[[theIdent]]))
 }
 
+length(Mye.type.markers[["Foamy"]])
+length(Mye.type.markers[["Resident"]])
+length(Mye.type.markers[["Inflammatory"]])
+
 # Query the DGIdb
 Mye.type.markers.dgi <- list()
 for( i in names(Mye.type.markers)){
@@ -156,6 +160,27 @@ for( i in names(Mye.type.markers)){
   x <- x[x$DistinctDrugCount > 0 & x$Score > 1,]
   write.table(x, file = paste("drugability_results/markers_plus_LRI_pairs/", i, " drug target full table.txt", sep = ""), quote = F, sep = "\t", row.names = F)
 }
+
+## Plot the types
+# set up archetype metadata
+archetypes <- as.vector(Idents(integrated.mye.seurat))
+archetypes[grep("Foamy", archetypes)] <- "Foamy"
+archetypes[grep("Resident|ABCG", archetypes)] <- "Resident"
+archetypes[grep("SELL", archetypes)] <- "Inflammatory"
+
+# Sanity check
+unique(archetypes)
+
+# Add to the seurat object
+integrated.mye.seurat <- AddMetaData(integrated.mye.seurat, archetypes, col.name = "archetype")
+
+# Setup the colours
+archetype.colors <- c("Resident" = "#528347", "Inflammatory" = "#87482F", "Foamy" = "#9476A3")
+
+# PLot the UMAP
+customUMAP(object = integrated.mye.seurat, group.by = "archetype", cols = archetype.colors,
+           label = F, shuffle = T, seed = 666, file.name = "drugability_results/markers_plus_LRI_pairs/archetypes.pdf", legend.pos = "none")
+
 
 # Plot number of interactions
 for( i in names(Mye.type.markers.dgi)){
@@ -528,3 +553,17 @@ for(theGene in c("ITGA4", "RARA", "ALOX5", "AKR1B1")){
                        do.plot       = T, 
                        verbose       = T)
 }
+
+
+## Get pathway information. Search in all pathways, not just enriched ones.
+# ITGA4
+ITGA4.pathways <- vector()
+I <- 1
+n <- length(names(gsets))
+for(thePathway in names(gsets)){
+  cat(paste(I, "of", n, "\t", thePathway, "\n"))
+  I <- I + 1
+  if("ITGA4" %in% geneIds(gsets[[thePathway]])){ITGA4.pathways <- c(ITGA4.pathways, thePathway)}
+}
+
+

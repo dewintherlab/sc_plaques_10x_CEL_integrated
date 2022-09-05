@@ -294,3 +294,35 @@ write.table(exp.m.s.cpdb.relevant[grep("Monocytes", exp.m.s.cpdb.relevant$ligand
 write.table(exp.m.s.cpdb.relevant[grep("Monocytes", exp.m.s.cpdb.relevant$receptor.cells),], file = "cellphonedb_results/Monocytic_cells_receptor.interactions.txt", 
             row.names = F, quote = F, sep = "\t")
 
+
+
+## Plot a heatmap of the number of interactions per celltype pair
+# Get the number of interactions per cell type pair
+count.cpdb.relevant <- cpdb.relevant[,12:ncol(cpdb.relevant)] > 0
+count.cpdb.relevant <- colSums(count.cpdb.relevant)
+
+## Shape the data for plotting
+# Split the cell pairs
+m.count.cpdb.relevant            <- melt(count.cpdb.relevant)
+m.count.cpdb.relevant$A          <- sub("\\..*", "", row.names(m.count.cpdb.relevant))
+m.count.cpdb.relevant$B          <- sub(".*.\\.", "", row.names(m.count.cpdb.relevant))
+row.names(m.count.cpdb.relevant) <- NULL
+
+# Turn into a df
+mat.count.cpdb.relevant <- data.frame(row.names =  unique(m.count.cpdb.relevant$A))
+for(celltype in unique(m.count.cpdb.relevant$A)){
+  mat.count.cpdb.relevant[,celltype] <- m.count.cpdb.relevant[m.count.cpdb.relevant$A == celltype,"value"]
+}
+
+# Sanity check
+mat.count.cpdb.relevant[1:5,1:5]
+head(m.count.cpdb.relevant)
+
+# Order on column of highest count
+high.count.cells        <- colnames(mat.count.cpdb.relevant)[apply(mat.count.cpdb.relevant, 1, max) == max(mat.count.cpdb.relevant)]
+mat.count.cpdb.relevant <- mat.count.cpdb.relevant[order(mat.count.cpdb.relevant[,high.count.cells], decreasing = T),]
+mat.count.cpdb.relevant <- mat.count.cpdb.relevant[,row.names(mat.count.cpdb.relevant)]
+
+## Make the plot
+pheatmap(mat = mat.count.cpdb.relevant, color = colorSpacer(startcolor = "black", endcolor = "red", steps = max(mat.count.cpdb.relevant)), border_color = NA,
+         cellwidth = 20, cellheight = 20, filename = "cellphonedb_results/heatmap.pdf", cluster_rows = F, cluster_cols = F, width = 15, height = 15)
