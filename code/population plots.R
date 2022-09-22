@@ -147,4 +147,27 @@ customUMAP(object = full.43p.seurat,
            file.name = "integration_QC/Integration UMAP CEL-seq.pdf")
 
 
+## Maker some TNFR plots
+dir.create("cellphonedb_results/TNFRSF", showWarnings = F, recursive = T)
 
+# Check which TNFRs we got
+TNFRs <- row.names(from_full.integrated.mye.seurat)[grep("^TNFRSF", row.names(from_full.integrated.mye.seurat))]
+
+# And plot them
+for(theGene in TNFRs){
+  stratifyByExpression(object    = from_full.integrated.mye.seurat, 
+                       strat.by  = theGene, 
+                       file.name = paste("cellphonedb_results/TNFRSF/", theGene, sep = ""), 
+                       verbose   = F, 
+                       onlyUMAP  = T)
+}
+
+# Plot ITGA4 in the same manner
+stratifyByExpression(object    = from_full.integrated.mye.seurat, 
+                     strat.by  = "ITGA4", 
+                     file.name = paste("cellphonedb_results/TNFRSF/", "ITGA4", sep = ""), 
+                     verbose   = F, 
+                     onlyUMAP  = T)
+
+
+full.43p.seurat$Phenotype

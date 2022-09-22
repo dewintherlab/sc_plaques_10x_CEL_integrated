@@ -57,6 +57,8 @@ dir.create("Seurat_Objects", showWarnings = F)
 # # Myeloid cells refined Seurat object
 # saveRDS(mye.patients.seurat, "Seurat_Objects/myeloid.cells.refined.seurat.RDS")
 #
+# # 43p seurat object, idents refined
+# saveRDS(full.43p.seurat, file = "Seurat_Objects/full_43p.idents_refiened.RDS")
 #
 # ## Marker genes
 # # All markers from all patients and idents
@@ -146,6 +148,8 @@ from_full.integrated.mye.seurat <- readRDS(file = "Seurat_Objects/from_full.43p_
 # ssGSEA data ran on mye.integrated.seurat
 ssGSEA.integrated.mye.seurat <- readRDS(file = "Seurat_Objects/ssGSEA_data.43p_10X.integrated.RDS")
 
+# 43p seurat obejct with refiend idents
+full.43p.seurat <- readRDS(file = "Seurat_Objects/full_43p.idents_refiened.RDS")
 
 ## Marker genes
 # All markers from all patients and idents
