@@ -326,3 +326,8 @@ mat.count.cpdb.relevant <- mat.count.cpdb.relevant[,row.names(mat.count.cpdb.rel
 ## Make the plot
 pheatmap(mat = mat.count.cpdb.relevant, color = colorSpacer(startcolor = "black", endcolor = "red", steps = max(mat.count.cpdb.relevant)), border_color = NA,
          cellwidth = 20, cellheight = 20, filename = "cellphonedb_results/heatmap.pdf", cluster_rows = F, cluster_cols = F, width = 15, height = 15)
+
+
+
+
+
