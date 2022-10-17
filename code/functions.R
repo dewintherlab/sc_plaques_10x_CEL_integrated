@@ -388,7 +388,7 @@ stratPlots <- function(object = samples.seurat, group.by = NULL, features = "GAP
 #==================================================================================================================================
 ## Stratify the seurat object based on expresion quntile of a given gene, and Plot a series of custom plots for stratified data.
 ##=================================================================================================================================
-stratifyByExpression <- function(object = all.seur.combined, strat.by = "GAPDH", file.name = "myplot", return.object = T, do.plot = T, verbose = T, onlyUMAP = F, lower.quantile = 0.25, upper.quantile = 0.75){
+stratifyByExpression <- function(object = all.seur.combined, strat.by = "GAPDH", gene.groups = list("Foamy genes" = c("ABCA1", "ABCG1", "OLR1"), "Resident genes" = c("LYVE1", "MRC1", "FOLR2"), "LAM genes" = c("TREM2", "CD9", "GPNMB"), "Inflammatory genes" = c("IL1B", "TNF", "NLRP3", "CASP1")), file.name = "myplot", return.object = T, do.plot = T, verbose = T, onlyUMAP = F, lower.quantile = 0.25, upper.quantile = 0.75){
   # Get marker expression levels
   if(!strat.by %in% row.names(object)){
     cat(strat.by, "not present in this Seurat object's RNA assay!\n")
@@ -447,43 +447,18 @@ stratifyByExpression <- function(object = all.seur.combined, strat.by = "GAPDH",
     
     # And some genes, if requested
     if(!onlyUMAP){
-      # Foamy genes
-      stratPlots(object   = object, 
-                 group.by = marker.col, 
-                 features = c("ABCA1", "ABCG1", "OLR1"), 
-                 cols     = c("grey", "bisque", "coral", "firebrick"),
-                 x.label  = paste("Stratified by", strat.by ,"expression", sep = " "), 
-                 name     = paste(file.name, " - Foamy genes", sep = ""),
-                 ncol     = 1)
-      
-      # Resident genes
-      stratPlots(object   = object, 
-                 group.by = marker.col, 
-                 features = c("LYVE1", "MRC1", "FOLR2"), 
-                 cols     = c("grey", "bisque", "coral", "firebrick"),
-                 x.label  = paste("Stratified by", strat.by ,"expression", sep = " "), 
-                 name     = paste(file.name, " - Resident genes", sep = ""),
-                 ncol     = 1)
-      
-      # LAM genes
-      stratPlots(object   = object, 
-                 group.by = marker.col, 
-                 features = c("TREM2", "CD9", "theMarker", "GPNMB"), 
-                 cols     = c("grey", "bisque", "coral", "firebrick"),
-                 x.label  = paste("Stratified by", strat.by ,"expression", sep = " "), 
-                 name     = paste(file.name, " - LAM genes", sep = ""),
-                 ncol     = 2)
-      
-      # Inflammatory genes
-      stratPlots(object   = object, 
-                 group.by = marker.col, 
-                 features = c("IL1B", "TNF", "NLRP3", "CASP1"), 
-                 cols     = c("grey", "bisque", "coral", "firebrick"),
-                 x.label  = paste("Stratified by", strat.by ,"expression", sep = " "), 
-                 name     = paste(file.name, " - Inflammatory genes", sep = ""),
-                 ncol     = 2)
+      for(theGroup in names(gene.groups)){
+        stratPlots(object   = object, 
+                   group.by = marker.col, 
+                   features = gene.groups[[theGroup]], 
+                   cols     = c("grey", "bisque", "coral", "firebrick"),
+                   x.label  = paste("Stratified by", strat.by ,"expression", sep = " "), 
+                   name     = paste(file.name, " - ", theGroup, sep = ""),
+                   ncol     = 1)
+      }
     }
   }
+    
   if(return.object){
     return(object)
   }

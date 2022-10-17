@@ -368,7 +368,12 @@ bunchOfCustomPlots(object = integrated.mye.seurat, group.by = "archetype", featu
 # Check CD45 distribution
 bunchOfCustomPlots(object = integrated.mye.seurat, features = "PTPRC", group.by = "Method", assay = "RNA", name = "various_plots/CD45_by_method.myeloid.pdf")
 customVln(object = integrated.mye.seurat, features = "PTPRC", splitPlot = T, split.by = "Method", assay = "RNA", name = "various_plots/CD45_by_method.split.myeloid.pdf")
-integrated.mye.seurat <- stratifyByExpression(object = integrated.mye.seurat, strat.by = "PTPRC", file.name = "various_plots/CD45_stratified.pdf", return.object = T)
+integrated.mye.seurat <- stratifyByExpression(object = integrated.mye.seurat, strat.by = "PTPRC", file.name = "various_plots/CD45_stratified", return.object = T)
+stratifyByExpression(object = integrated.mye.seurat, 
+                     strat.by = "PTPRC", 
+                     return.object = F, 
+                     file.name = "various_plots/CD45_stratified_mac_genes", 
+                     gene.groups = list("Mac genes" = c("CD14", "FCGR3A", "CD68", "TREM2", "FOLR2")))
 
 # Check CD45 and method contribution to populaiton size
 no_CD45.dist     <- table(Idents(integrated.mye.seurat)[row.names(integrated.mye.seurat@meta.data[integrated.mye.seurat@meta.data$PTPRC_expr == "Zero",])])
@@ -425,7 +430,7 @@ ggsave("various_plots/CD45_NULL_by_method.pdf")
 # Check CD68 distribution
 bunchOfCustomPlots(object = integrated.mye.seurat, features = "CD68", group.by = "Method", assay = "RNA", name = "various_plots/CD68_by_method.myeloid.pdf")
 customVln(object = integrated.mye.seurat, features = "CD68", splitPlot = T, split.by = "Method", assay = "RNA", name = "various_plots/CD68_by_method.split.myeloid.pdf")
-integrated.mye.seurat <- stratifyByExpression(object = integrated.mye.seurat, strat.by = "CD68", file.name = "various_plots/CD68_stratified.pdf", return.object = T)
+integrated.mye.seurat <- stratifyByExpression(object = integrated.mye.seurat, strat.by = "CD68", file.name = "various_plots/CD68_stratified", return.object = T)
 
 # Check CD45 and method contribution to populaiton size
 no_CD68.dist     <- table(Idents(integrated.mye.seurat)[row.names(integrated.mye.seurat@meta.data[integrated.mye.seurat@meta.data$CD68_expr == "Zero",])])
@@ -464,7 +469,7 @@ ggsave("various_plots/CD68_NULL_by_method.pdf")
 # Check CD14 distribution
 bunchOfCustomPlots(object = integrated.mye.seurat, features = "CD14", group.by = "Method", assay = "RNA", name = "various_plots/CD14_by_method.myeloid.pdf")
 customVln(object = integrated.mye.seurat, features = "CD14", splitPlot = T, split.by = "Method", assay = "RNA", name = "various_plots/CD14_by_method.split.myeloid.pdf")
-integrated.mye.seurat <- stratifyByExpression(object = integrated.mye.seurat, strat.by = "CD14", file.name = "various_plots/CD14_stratified.pdf", return.object = T)
+integrated.mye.seurat <- stratifyByExpression(object = integrated.mye.seurat, strat.by = "CD14", file.name = "various_plots/CD14_stratified", return.object = T)
 
 # Check CD45 and method contribution to populaiton size
 no_CD14.dist     <- table(Idents(integrated.mye.seurat)[row.names(integrated.mye.seurat@meta.data[integrated.mye.seurat@meta.data$CD14_expr == "Zero",])])
@@ -503,7 +508,7 @@ ggsave("various_plots/CD14_NULL_by_method.pdf")
 # Check CD16 distribution
 bunchOfCustomPlots(object = integrated.mye.seurat, features = "FCGR3A", group.by = "Method", assay = "RNA", name = "various_plots/CD16_by_method.myeloid.pdf")
 customVln(object = integrated.mye.seurat, features = "FCGR3A", splitPlot = T, split.by = "Method", assay = "RNA", name = "various_plots/CD16_by_method.split.myeloid.pdf")
-integrated.mye.seurat <- stratifyByExpression(object = integrated.mye.seurat, strat.by = "FCGR3A", file.name = "various_plots/CD16_stratified.pdf", return.object = T)
+integrated.mye.seurat <- stratifyByExpression(object = integrated.mye.seurat, strat.by = "FCGR3A", file.name = "various_plots/CD16_stratified", return.object = T)
 
 # Check CD45 and method contribution to populaiton size
 no_CD16.dist     <- table(Idents(integrated.mye.seurat)[row.names(integrated.mye.seurat@meta.data[integrated.mye.seurat@meta.data$FCGR3A_expr == "Zero",])])
