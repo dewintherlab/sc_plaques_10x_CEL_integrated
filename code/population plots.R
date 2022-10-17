@@ -349,11 +349,11 @@ bunchOfCustomPlots(object = integrated.mye.seurat, features = olink.res.genes.to
 
 ## Set up archetypes
 archetypes <- as.vector(Idents(integrated.mye.seurat))
-archetypes[grep("Monocytes", archetypes)]    <- "Monocytes"
+archetypes[grep("Monocytes",    archetypes)] <- "Monocytes"
 archetypes[grep("Inflammatory", archetypes)] <- "Inflammatory"
-archetypes[grep("Resident", archetypes)]     <- "Resident"
-archetypes[grep("Foamy", archetypes)]        <- "Foamy"
-archetypes[grep("Lipid", archetypes)]        <- "Resident"
+archetypes[grep("Resident",     archetypes)] <- "Resident"
+archetypes[grep("Foamy",        archetypes)] <- "Foamy"
+archetypes[grep("Lipid",        archetypes)] <- "Resident"
 
 integrated.mye.seurat <- AddMetaData(integrated.mye.seurat, metadata = archetypes, col.name = "archetype")
 
@@ -404,6 +404,9 @@ no_CD45_and_method10x.dist  <- table(Idents(integrated.mye.seurat)[row.names(int
 no_CD45_and_method.ratio    <- no_CD45_and_method.dist    / method.dist
 no_CD45_and_method10x.ratio <- no_CD45_and_method10x.dist / (total.dist - method.dist)
 
+# Total CD45 NULL ratio
+CD45_NULL.ratio <- sum(no_CD45.dist) / (CEl.cells + tenX.cells)
+
 # Plot the ratios
 m           <- merge(data.frame(no_CD45_and_method.ratio), data.frame(no_CD45_and_method10x.ratio), by = 1)
 colnames(m) <- c("Population", "CD45_NULL_CEL-seq", "CD45_NULL_10X")
@@ -412,11 +415,129 @@ colnames(m) <- c("Population", "Type", "Ratio")
 
 ggplot(m, aes(x = Population, y = Ratio, group = Type, col = Type)) +
   geom_line() +
+  geom_hline(yintercept = CD45_NULL.ratio, col = "purple", size = 0.25) +
   theme_pubr() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ggsave("various_plots/CD45_NULL_by_method.pdf")
 
 
+## Check CD68 in the same way as a control
+# Check CD68 distribution
+bunchOfCustomPlots(object = integrated.mye.seurat, features = "CD68", group.by = "Method", assay = "RNA", name = "various_plots/CD68_by_method.myeloid.pdf")
+customVln(object = integrated.mye.seurat, features = "CD68", splitPlot = T, split.by = "Method", assay = "RNA", name = "various_plots/CD68_by_method.split.myeloid.pdf")
+integrated.mye.seurat <- stratifyByExpression(object = integrated.mye.seurat, strat.by = "CD68", file.name = "various_plots/CD68_stratified.pdf", return.object = T)
+
+# Check CD45 and method contribution to populaiton size
+no_CD68.dist     <- table(Idents(integrated.mye.seurat)[row.names(integrated.mye.seurat@meta.data[integrated.mye.seurat@meta.data$CD68_expr == "Zero",])])
+method.dist      <- table(Idents(integrated.mye.seurat)[row.names(integrated.mye.seurat@meta.data[integrated.mye.seurat@meta.data$Method == "CEL-seq",])])
+total.dist       <- table(Idents(integrated.mye.seurat))
+CD68.ratio       <- no_CD68.dist / total.dist
+method.ratio     <- method.dist  / total.dist
+method.ratio.10x <- 1 - method.ratio
+
+# Look at CD45 split by method
+no_CD68_and_method.dist     <- table(Idents(integrated.mye.seurat)[row.names(integrated.mye.seurat@meta.data[integrated.mye.seurat@meta.data$Method == "CEL-seq" & integrated.mye.seurat@meta.data$CD68_expr == "Zero",])])
+no_CD68_and_method10x.dist  <- table(Idents(integrated.mye.seurat)[row.names(integrated.mye.seurat@meta.data[integrated.mye.seurat@meta.data$Method == "10X" & integrated.mye.seurat@meta.data$CD68_expr == "Zero",])])
+
+# Normalise to method level
+no_CD68_and_method.ratio    <- no_CD68_and_method.dist    / method.dist
+no_CD68_and_method10x.ratio <- no_CD68_and_method10x.dist / (total.dist - method.dist)
+
+# Total CD45 NULL ratio
+CD68_NULL.ratio <- sum(no_CD68.dist) / (CEl.cells + tenX.cells)
+
+# Plot the ratios
+m           <- merge(data.frame(no_CD68_and_method.ratio), data.frame(no_CD68_and_method10x.ratio), by = 1)
+colnames(m) <- c("Population", "CD68_NULL_CEL-seq", "CD68_NULL_10X")
+m           <- melt(m)
+colnames(m) <- c("Population", "Type", "Ratio")
+
+ggplot(m, aes(x = Population, y = Ratio, group = Type, col = Type)) +
+  geom_line() +
+  geom_hline(yintercept = CD68_NULL.ratio, col = "purple", size = 0.25) +
+  theme_pubr() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+ggsave("various_plots/CD68_NULL_by_method.pdf")
+
+
+## Check CD14 in the same way as a control
+# Check CD14 distribution
+bunchOfCustomPlots(object = integrated.mye.seurat, features = "CD14", group.by = "Method", assay = "RNA", name = "various_plots/CD14_by_method.myeloid.pdf")
+customVln(object = integrated.mye.seurat, features = "CD14", splitPlot = T, split.by = "Method", assay = "RNA", name = "various_plots/CD14_by_method.split.myeloid.pdf")
+integrated.mye.seurat <- stratifyByExpression(object = integrated.mye.seurat, strat.by = "CD14", file.name = "various_plots/CD14_stratified.pdf", return.object = T)
+
+# Check CD45 and method contribution to populaiton size
+no_CD14.dist     <- table(Idents(integrated.mye.seurat)[row.names(integrated.mye.seurat@meta.data[integrated.mye.seurat@meta.data$CD14_expr == "Zero",])])
+method.dist      <- table(Idents(integrated.mye.seurat)[row.names(integrated.mye.seurat@meta.data[integrated.mye.seurat@meta.data$Method == "CEL-seq",])])
+total.dist       <- table(Idents(integrated.mye.seurat))
+CD14.ratio       <- no_CD14.dist / total.dist
+method.ratio     <- method.dist  / total.dist
+method.ratio.10x <- 1 - method.ratio
+
+# Look at CD45 split by method
+no_CD14_and_method.dist     <- table(Idents(integrated.mye.seurat)[row.names(integrated.mye.seurat@meta.data[integrated.mye.seurat@meta.data$Method == "CEL-seq" & integrated.mye.seurat@meta.data$CD14_expr == "Zero",])])
+no_CD14_and_method10x.dist  <- table(Idents(integrated.mye.seurat)[row.names(integrated.mye.seurat@meta.data[integrated.mye.seurat@meta.data$Method == "10X" & integrated.mye.seurat@meta.data$CD14_expr == "Zero",])])
+
+# Normalise to method level
+no_CD14_and_method.ratio    <- no_CD14_and_method.dist    / method.dist
+no_CD14_and_method10x.ratio <- no_CD14_and_method10x.dist / (total.dist - method.dist)
+
+# Total CD45 NULL ratio
+CD14_NULL.ratio <- sum(no_CD14.dist) / (CEl.cells + tenX.cells)
+
+# Plot the ratios
+m           <- merge(data.frame(no_CD14_and_method.ratio), data.frame(no_CD14_and_method10x.ratio), by = 1)
+colnames(m) <- c("Population", "CD14_NULL_CEL-seq", "CD14_NULL_10X")
+m           <- melt(m)
+colnames(m) <- c("Population", "Type", "Ratio")
+
+ggplot(m, aes(x = Population, y = Ratio, group = Type, col = Type)) +
+  geom_line() +
+  geom_hline(yintercept = CD14_NULL.ratio, col = "purple", size = 0.25) +
+  theme_pubr() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+ggsave("various_plots/CD14_NULL_by_method.pdf")
+
+
+## Check CD16 in the same way as a control
+# Check CD16 distribution
+bunchOfCustomPlots(object = integrated.mye.seurat, features = "FCGR3A", group.by = "Method", assay = "RNA", name = "various_plots/CD16_by_method.myeloid.pdf")
+customVln(object = integrated.mye.seurat, features = "FCGR3A", splitPlot = T, split.by = "Method", assay = "RNA", name = "various_plots/CD16_by_method.split.myeloid.pdf")
+integrated.mye.seurat <- stratifyByExpression(object = integrated.mye.seurat, strat.by = "FCGR3A", file.name = "various_plots/CD16_stratified.pdf", return.object = T)
+
+# Check CD45 and method contribution to populaiton size
+no_CD16.dist     <- table(Idents(integrated.mye.seurat)[row.names(integrated.mye.seurat@meta.data[integrated.mye.seurat@meta.data$FCGR3A_expr == "Zero",])])
+method.dist      <- table(Idents(integrated.mye.seurat)[row.names(integrated.mye.seurat@meta.data[integrated.mye.seurat@meta.data$Method == "CEL-seq",])])
+total.dist       <- table(Idents(integrated.mye.seurat))
+CD16.ratio       <- no_CD16.dist / total.dist
+method.ratio     <- method.dist  / total.dist
+method.ratio.10x <- 1 - method.ratio
+
+# Look at CD45 split by method
+no_CD16_and_method.dist     <- table(Idents(integrated.mye.seurat)[row.names(integrated.mye.seurat@meta.data[integrated.mye.seurat@meta.data$Method == "CEL-seq" & integrated.mye.seurat@meta.data$FCGR3A_expr == "Zero",])])
+no_CD16_and_method10x.dist  <- table(Idents(integrated.mye.seurat)[row.names(integrated.mye.seurat@meta.data[integrated.mye.seurat@meta.data$Method == "10X" & integrated.mye.seurat@meta.data$FCGR3A_expr == "Zero",])])
+
+# Normalise to method level
+no_CD16_and_method.ratio    <- no_CD16_and_method.dist    / method.dist
+no_CD16_and_method10x.ratio <- no_CD16_and_method10x.dist / (total.dist - method.dist)
+
+# Total CD45 NULL ratio
+CD16_NULL.ratio <- sum(no_CD16.dist) / (CEl.cells + tenX.cells)
+
+# Plot the ratios
+m           <- merge(data.frame(no_CD16_and_method.ratio), data.frame(no_CD16_and_method10x.ratio), by = 1)
+colnames(m) <- c("Population", "CD16_NULL_CEL-seq", "CD16_NULL_10X")
+m           <- melt(m)
+colnames(m) <- c("Population", "Type", "Ratio")
+
+ggplot(m, aes(x = Population, y = Ratio, group = Type, col = Type)) +
+  geom_line() +
+  geom_hline(yintercept = CD16_NULL.ratio, col = "purple", size = 0.25) +
+  theme_pubr() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+ggsave("various_plots/CD16_NULL_by_method.pdf")
+
+#=================================================================================================
 ## Some Monaco targets
 dir.create("various_plots/Monaco_targets", showWarnings = F, recursive = T)
 bunchOfCustomPlots(object = from_full.integrated.mye.seurat, features = c("ZEB2", "CLEC4A", "IRF4", "IRF5"), assay = "RNA", ncol = 2, Vln.draw.names = F, name = "various_plots/Monaco_targets/Monaco_targets", Vln.color = M.int_refined.pop.colors )

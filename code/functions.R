@@ -392,7 +392,11 @@ stratifyByExpression <- function(object = all.seur.combined, strat.by = "GAPDH",
   # Get marker expression levels
   if(!strat.by %in% row.names(object)){
     cat(strat.by, "not present in this Seurat object's RNA assay!\n")
-    return()
+    if(return.object){
+      return(object)
+    }else{
+      return()
+    }
   }
   
   theMarker <- GetAssayData(object = object, assay = "RNA")[strat.by,]
