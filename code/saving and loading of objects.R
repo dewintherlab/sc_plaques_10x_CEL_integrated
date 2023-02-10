@@ -1,4 +1,4 @@
-#=================================================================================================================================
+ #=================================================================================================================================
 ## Overview of endpoint or branchpoint objects, saved to disk.
 ## Can be used to restart analysis at a midway or end point without having to re-run the whole thing.
 ##================================================================================================================================
@@ -60,6 +60,15 @@ dir.create("Seurat_Objects", showWarnings = F)
 # # 43p seurat object, idents refined
 # saveRDS(full.43p.seurat, file = "Seurat_Objects/full_43p.idents_refiened.RDS")
 #
+
+# ## Final population update
+# saveRDS(final.pop.call.integrated.mye.seurat, file = "Seurat_Objects/final.pop.call.integrated.mye.seurat.Rds")
+# saveRDS(from_full.integrated.mye.seurat, file = "Seurat_Objects/from_full.integrated.mye.seurat.Rds")
+# saveRDS(final.pop.call.from_full.integrated.mye.seurat, file = "Seurat_Objects/final.pop.call.from_full.integrated.mye.seurat.Rds")
+# saveRDS(final.pop.call.integrated.full.seurat, file = "Seurat_Objects/final.pop.call.integrated.full.seurat.Rds")
+# saveRDS(final.pop.call.integrated.mye.velocyto.seurat, "Seurat_Objects/final.pop.call.mye.velo_plaque.integrated.mapped.refined_populations.seurat.RDS")
+# saveRDS(final.pop.call.from_full.integrated.mye.velocyto.seurat, "Seurat_Objects/final.pop.call.mye.velo_pbmc_plaque.integrated.mapped.refined_populations.seurat.RDS")
+#
 # ## Marker genes
 # # All markers from all patients and idents
 # saveRDS(all.patients.seurat.markers, "Seurat_Objects/main.patients.markers.RDS")
@@ -92,8 +101,8 @@ dir.create("Seurat_Objects", showWarnings = F)
 # saveRDS(vars.to.regress,       file = "Seurat_Objects/vars.to.regress.Rds")
 # saveRDS(Mye.markers.dgi,       file = "Seurat_Objects/mye_markers.DGI_object.RDS")
 # saveRDS(exp.m.s.cpdb.relevant, file = "Seurat_Objects/cpdb_results.clean.RDS")
-
-
+#
+#
 #=================================================================================================================================
 ## Objects to load
 ##================================================================================================================================
@@ -150,6 +159,11 @@ ssGSEA.integrated.mye.seurat <- readRDS(file = "Seurat_Objects/ssGSEA_data.43p_1
 
 # 43p seurat obejct with refiend idents
 full.43p.seurat <- readRDS(file = "Seurat_Objects/full_43p.idents_refiened.RDS")
+
+# Final population update
+final.pop.call.from_full.integrated.mye.seurat          <- readRDS(file = "Seurat_Objects/final.pop.call.from_full.integrated.mye.seurat.Rds")
+final.pop.call.from_full.integrated.mye.velocyto.seurat <- readRDS(file = "Seurat_Objects/final.pop.call.mye.velo_pbmc_plaque.integrated.mapped.refined_populations.seurat.RDS")
+final.pop.call.integrated.mye.velocyto.seurat           <- readRDS(file = "Seurat_Objects/mye.velo_plaque.integrated.mapped.refined_populations.seurat.RDS")
 
 ## Marker genes
 # All markers from all patients and idents

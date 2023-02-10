@@ -182,6 +182,11 @@ dir.create("various_plots", showWarnings = F)
 bunchOfCustomPlots(object = from_full.integrated.mye.seurat, features = c("CSF1", "CSF1R"), Vln.draw.names = T, name = "various_plots/CSF1_CSF1R", Vln.color = M.int_refined.pop.colors )
 bunchOfCustomPlots(object = from_full.integrated.mye.seurat, features = c("IL1B", "IL1R1"), Vln.draw.names = T, name = "various_plots/IL1B_IL1R1", Vln.color = M.int_refined.pop.colors )
 
+# ANRIL
+from_full.integrated.mye.seurat$RNA@counts[grep("CDKN", row.names(from_full.integrated.mye.seurat@assays$RNA@counts)),1:5, drop = F]
+from_full.integrated.mye.seurat$RNA@counts[grep("ANRIL", row.names(from_full.integrated.mye.seurat@assays$RNA@data)),1:5, drop = F]
+
+#bunchOfCustomPlots(object = from_full.integrated.mye.seurat, features = c("CDKN2B-AS"),         Vln.draw.names = T, name = "various_plots/ANRIL", Vln.color = M.int_refined.pop.colors)
 
 #=================================================================================================
 ## Protein panel plots
@@ -196,7 +201,7 @@ for(theGene in AE.prot.list$Gene){
   stratifyByExpression(object    = integrated.full.seurat,
                        onlyUMAP = T,
                        strat.by  = theGene,
-                       file.name = paste("various_plots/AE_measured_proteins/", AE.prot.list[which(AE.prot.list$Gene == theGene), "Protein"], "stratified.full_set.pdf"))
+                       file.name = paste("various_plots/AE_measured_proteins/", AE.prot.list[which(AE.prot.list$Gene == theGene), "Protein"], "stratified.full_set"))
 }
 
 # Short list of genes potentially relevant to macs (deduced from global plots)
@@ -208,7 +213,7 @@ for(theGene in AE.prot.short.list$Gene){
   stratifyByExpression(object    = from_full.integrated.mye.seurat,
                        onlyUMAP  = F,
                        strat.by  = theGene,
-                       file.name = paste("various_plots/AE_measured_proteins/", AE.prot.short.list[which(AE.prot.short.list$Gene == theGene), "Protein"], "stratified.myeloid_pops.pdf"))
+                       file.name = paste("various_plots/AE_measured_proteins/", AE.prot.short.list[which(AE.prot.short.list$Gene == theGene), "Protein"], "stratified.myeloid_pops"))
 }
   
 # Boot MPO form the short list, mostly expressed in monocytes
@@ -361,6 +366,26 @@ bunchOfCustomPlots(object = integrated.mye.seurat, group.by = "archetype", featu
 bunchOfCustomPlots(object = integrated.mye.seurat, group.by = "archetype", features = olink.foam.genes.top10, assay = "RNA", Vln.draw.names = T, Vln.color = archetype.colors, ncol = 3, name = "various_plots/OLINK_panels/foam_types_top10")
 bunchOfCustomPlots(object = integrated.mye.seurat, group.by = "archetype", features = olink.res.genes.top10,  assay = "RNA", Vln.draw.names = T, Vln.color = archetype.colors, ncol = 3, name = "various_plots/OLINK_panels/res_types_top10")
 
+## Check furhter down the chain for the inf group
+dir.create("various_plots/OLINK_panels/inf_top20", showWarnings = F, recursive = T)
+olink.inf.genes.top20  <- row.names(avex.mye.archetype[olink.inf.genes, ][order(avex.mye.archetype[olink.inf.genes, ]$Inflammatory, decreasing = T),])[11:20]
+bunchOfCustomPlots(object = integrated.mye.seurat, features = olink.inf.genes.top20,  assay = "RNA", Vln.draw.names = F, Vln.color = M.int_refined.pop.colors, ncol = 3, name = "various_plots/OLINK_panels/inf_top20/inf_pops_top20")
+bunchOfCustomPlots(object = from_full.integrated.mye.seurat, features = olink.inf.genes.top20,  assay = "RNA", Vln.draw.names = F, Vln.color = M.int_refined.pop.colors, ncol = 3, name = "various_plots/OLINK_panels/inf_top20/inf_pops_mono_top20")
+
+dir.create("various_plots/OLINK_panels/inf_top30", showWarnings = F, recursive = T)
+olink.inf.genes.top30  <- row.names(avex.mye.archetype[olink.inf.genes, ][order(avex.mye.archetype[olink.inf.genes, ]$Inflammatory, decreasing = T),])[21:30]
+bunchOfCustomPlots(object = integrated.mye.seurat, features = olink.inf.genes.top30,  assay = "RNA", Vln.draw.names = F, Vln.color = M.int_refined.pop.colors, ncol = 3, name = "various_plots/OLINK_panels/inf_top30/inf_pops_top30")
+bunchOfCustomPlots(object = from_full.integrated.mye.seurat, features = olink.inf.genes.top30,  assay = "RNA", Vln.draw.names = F, Vln.color = M.int_refined.pop.colors, ncol = 3, name = "various_plots/OLINK_panels/inf_top30/inf_pops_mono_top30")
+
+dir.create("various_plots/OLINK_panels/inf_top40", showWarnings = F, recursive = T)
+olink.inf.genes.top40  <- row.names(avex.mye.archetype[olink.inf.genes, ][order(avex.mye.archetype[olink.inf.genes, ]$Inflammatory, decreasing = T),])[31:40]
+bunchOfCustomPlots(object = integrated.mye.seurat, features = olink.inf.genes.top40,  assay = "RNA", Vln.draw.names = F, Vln.color = M.int_refined.pop.colors, ncol = 3, name = "various_plots/OLINK_panels/inf_top40/inf_pops_top40")
+bunchOfCustomPlots(object = from_full.integrated.mye.seurat, features = olink.inf.genes.top40,  assay = "RNA", Vln.draw.names = F, Vln.color = M.int_refined.pop.colors, ncol = 3, name = "various_plots/OLINK_panels/inf_top40/inf_pops_mono_top40")
+
+dir.create("various_plots/OLINK_panels/inf_top50", showWarnings = F, recursive = T)
+olink.inf.genes.top50  <- row.names(avex.mye.archetype[olink.inf.genes, ][order(avex.mye.archetype[olink.inf.genes, ]$Inflammatory, decreasing = T),])[41:50]
+bunchOfCustomPlots(object = integrated.mye.seurat, features = olink.inf.genes.top50,  assay = "RNA", Vln.draw.names = F, Vln.color = M.int_refined.pop.colors, ncol = 3, name = "various_plots/OLINK_panels/inf_top50/inf_pops_top50")
+bunchOfCustomPlots(object = from_full.integrated.mye.seurat, features = olink.inf.genes.top50,  assay = "RNA", Vln.draw.names = F, Vln.color = M.int_refined.pop.colors, ncol = 3, name = "various_plots/OLINK_panels/inf_top50/inf_pops_mono_top50")
 
 #=================================================================================================
 ## method or CD45 selection bias in myeloid clusters
@@ -382,6 +407,7 @@ total.dist       <- table(Idents(integrated.mye.seurat))
 CD45.ratio       <- no_CD45.dist / total.dist
 method.ratio     <- method.dist  / total.dist
 method.ratio.10x <- 1 - method.ratio
+
 
 # Plot the ratios
 m           <- merge(data.frame(method.ratio.10x), data.frame(method.ratio), by = 1)
@@ -550,8 +576,145 @@ for(theGene in c("ZEB2", "CLEC4A", "IRF4", "IRF5")){
   stratifyByExpression(object    = from_full.integrated.mye.seurat,
                        onlyUMAP  = F,
                        strat.by  = theGene,
-                       file.name = paste("various_plots/Monaco_targets/",theGene, ".stratified.myeloid_pops.pdf"))
+                       file.name = paste("various_plots/Monaco_targets/",theGene, ".stratified.myeloid_pops.pdf", sep = ""))
 }
+
+# Fix IRF5 'not found in assay'
+stratifyByExpression(object    = from_full.integrated.mye.seurat,
+                     assay     = "integrated",
+                     onlyUMAP  = T,
+                     strat.by  = "IRF5",
+                     file.name = paste("various_plots/Monaco_targets/",theGene, ".stratified.myeloid_pops.pdf", sep = ""))
+                     
+           FeaturePlot(object = from_full.integrated.mye.seurat, features = "IRF5", )  
+           
 bunchOfCustomPlots(object = from_full.integrated.mye.seurat, features = c("ZEB2", "CLEC4A", "IRF4", "IRF5"), assay = "RNA", ncol = 2, group.by = "archetype", Vln.draw.names = T, name = "various_plots/Monaco_targets/Monaco_targets_archetype", Vln.color = archetype.colors )
+
+bunchOfCustomPlots(object = from_full.integrated.mye.seurat, features = c("ITGAX", "IRF5"), assay = "RNA", ncol = 2, group.by = "archetype", Vln.draw.names = T, name = "various_plots/Monaco_targets/Monaco_targets_ITGAX_archetype", Vln.color = archetype.colors )
+bunchOfCustomPlots(object = from_full.integrated.mye.seurat, features = c("ITGAX", "IRF5"), assay = "RNA", ncol = 2, Vln.draw.names = F, name = "various_plots/Monaco_targets/Monaco_targets_ITGAX", Vln.color = M.int_refined.pop.colors )
+
+# Split on phenotype
+customVln(object = from_full.integrated.mye.seurat, features = c("ITGAX", "IRF5"), assay = "RNA", ncol = 2, splitPlot = T, split.by = "Phenotype", group.by = "archetype", draw.names = T, name = "various_plots/Monaco_targets/Monaco_targets_ITGAX_symp_split_archetype.pdf" )
+customVln(object = from_full.integrated.mye.seurat, features = c("ITGAX", "IRF5"), assay = "RNA", ncol = 2, splitPlot = T, split.by = "Phenotype", draw.names = F, name = "various_plots/Monaco_targets/Monaco_targets_ITGAX_symp_split.pdf", stack = T )
+
+
+## Fibrotic genes Annette
+# Create a sub dir
+dir.create("various_plots/Annette")
+
+# Load the requested genes
+fib.genes <- c("Col1a1","Col1a2","Col3a1","Acta2", "Fn1","Sparc","Fbln2","Serpinh1")
+fib.genes <- toupper(fib.genes)
+
+# And plot
+bunchOfCustomPlots(object          = integrated.mye.seurat, 
+                   features        = fib.genes, 
+                   assay           = "RNA", 
+                   Vln.draw.names  = F, 
+                   Vln.pt.size     = 1,
+                   name            = "various_plots/Annette/fib_genes", 
+                   feature.pt.size = 1.25,
+                   Vln.color       = M.int_refined.pop.colors,
+                   ncol            = 3,
+                   Vln.width       = 20)
+
+## Also check in the 18p data
+# Load the seurat object
+mye.18p.seurat <- readRDS(file = "raw_data/v3.all.seur.combined.M_clusters.Rds")
+
+# Plot
+bunchOfCustomPlots(object          = mye.18p.seurat,  
+                   features        = fib.genes, 
+                   assay           = "RNA",
+                   idents          = c("Mye.0", "Mye.1", "Mye.2"), 
+                   Vln.pt.size     = 1,
+                   reduction       = "tsne",
+                   Vln.draw.names  = T, 
+                   name            = "various_plots/Annette/fib_genes.18_patients_from_paper", 
+                   feature.pt.size = 1.25,
+                   ncol            = 3,
+                   Vln.width       = 20)
+customUMAP(object     = mye.18p.seurat, 
+           pt.size    = 4,
+           label      = F, 
+           title      = "18 patients macrophages", 
+           reduction  = "tsne", 
+           cells      = WhichCells(object = mye.18p.seurat, idents = c("Mye.0", "Mye.1", "Mye.2")), 
+           legend.pos = "top", 
+           file.name  = "various_plots/Annette/tSNE - 18 patients form paper.pdf")
+
+# Clean it up again
+rm(mye.18p.seurat)
+
+
+## Plot monocytes panels
+# Make the standard plots
+unique(Idents(from_full.integrated.mye.seurat))
+bunchOfCustomPlots(object         = from_full.integrated.mye.seurat, 
+                   idents         = unique(Idents(from_full.integrated.mye.seurat))[1:3], 
+                   features       = c("CD14", "LYZ", "S100A8", "CCR2", "ITGAX", "CD86", "FCGR3A", "MS4A7", "CDKN1C"), 
+                   Vln.draw.names = F, 
+                   name           = "various_plots/monocyte panels", 
+                   ncol           = 3,
+                   assay          = "RNA", 
+                   Vln.color      = M.int_refined.pop.colors, Vln.pt.size = 0, dot.scale = 20, Vln.width = 16, Vln.height = 6
+)
+
+# Draw a heatmap of the markers
+mono.sep.markers.top5 <- pbmc.monocytes.seurat.markers %>% group_by(cluster) %>% top_n(5, avg_log2FC)
+
+DoHeatmap(object = from_full.integrated.mye.seurat, 
+           cells = WhichCells(object = from_full.integrated.mye.seurat, idents =  unique(Idents(from_full.integrated.mye.seurat))[1:3]),
+        features = mono.sep.markers.top5$gene, assay = "RNA", label = F, raster = F, group.colors = M.int_refined.pop.colors)
+ggsave("various_plots/mono marker heatmap.pdf")
+
+
+## Plot druggable target
+d.targets <- c("AKR1B1", "ALOX5", "ITGA4", "RARA")
+customVln(final.pop.call.integrated.mye.seurat, features = d.targets, group.by = "archetype", cols = archetype.colors, assay = "RNA", ncol = 2,draw.names = F, name = "various_plots/drug targets violin.pdf")
+customDot(final.pop.call.integrated.mye.seurat, features = d.targets, group.by = "archetype", assay = "RNA", name = "various_plots/drug targets dot.pdf")
+
+
+## Plot some markers for the 43 populations
+# Check what we have
+DimPlot(full.43p.seurat, group.by = "celltypes.43p", cols = celltypes.43p.cols) + NoLegend()
+
+# Define some cell type markers
+celltype.markers <- c("CD3E", "CD8A", "CD4", "CD14", "CD68", "NCAM1", "CD79A", "ACTA2", "CD34")
+
+# And make some plots
+bunchOfCustomPlots(object          = full.43p.seurat, 
+                   group.by        = "celltypes.43p", 
+                   features        = celltype.markers, 
+                   Vln.draw.names  = F, 
+                   Vln.pt.size     = 0, 
+                   feature.pt.size = 1.5,
+                   name            = "various_plots/43p celltypes", 
+                   assay           = "RNA", 
+                   Vln.width       = 13,
+                   Vln.height      = 10,
+                   Vln.color       = celltypes.43p.cols,
+                   ncol            = 3,
+                   Dot.width       = 10, 
+                   Dot.height      = 5, 
+                   dot.scale       = 15
+                )
+
+## Plot pop markers
+# Get pop markers
+full.43p.seurat.celltype.idents         <- full.43p.seurat
+Idents(full.43p.seurat.celltype.idents) <- full.43p.seurat$celltypes.43p
+full.43p.seurat.celltype.markers        <- FindAllMarkers(object = full.43p.seurat.celltype.idents, assay = "RNA", min.pct = 0.25, min.diff.pct = 0.25)
+full.43p.seurat.celltype.markers.top5   <- full.43p.seurat.celltype.markers %>% group_by(cluster) %>% top_n(5, avg_log2FC)
+
+# Plot a heatmap
+DoHeatmap(object       = full.43p.seurat.celltype.idents, 
+          features     = full.43p.seurat.celltype.markers.top5$gene, 
+          group.colors = celltypes.43p.cols,
+          assay        = "RNA",
+          raster       = F, 
+          label        = F)
+ggsave(filename = "various_plots/43p celltypes - heatmap.pdf")
+
 
 

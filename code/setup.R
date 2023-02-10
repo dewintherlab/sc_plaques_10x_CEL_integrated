@@ -46,6 +46,8 @@ library(dittoSeq)
 library(rstatix)
 library(varhandle)
 library(rDGIdb)
+library(scales)
+library(reticulate)
 
 
 # Load custom functions

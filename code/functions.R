@@ -1,4 +1,43 @@
 ##========================================================================================================================
+## Correlation plot
+##========================================================================================================================
+plot.cor <- function(object = final.pop.call.integrated.full.seurat, assay = "RNA", features = "GAPDH", cor.feature = "CLEC4A", group.by = "Patient", ncol = 2, file.name = "cor.plot.pdf", width = 10, height = 10){
+  # Get average expression for the requested features per group
+  avg.expression.gene.set <- as.data.frame(AverageExpression(object   = object, 
+                                                             assays   = assay, 
+                                                             features = c(features, cor.feature), 
+                                                             group.by = group.by)[[assay]])
+
+  # Scale from 0 to 1
+  avg.expression.gene.set <- as.data.frame(apply(avg.expression.gene.set, 1, rescale))
+  
+  # Iterate over all comparisons with CLEC4A
+  ggscatter(data           = avg.expression.gene.set,
+            x              = cor.feature,
+            y              = colnames(avg.expression.gene.set)[-length(colnames(avg.expression.gene.set))],
+            combine        = T,
+            ncol           = ncol,
+            add            = "reg.line",
+            add.params     = list(color = "red", fill = "grey"),
+            conf.int       = TRUE, 
+            cor.coef       = TRUE, 
+            cor.method     = "spearman",
+            xlab           = paste(cor.feature,"(AU)", sep = " "),
+            ylab           = "(AU)", 
+            cor.coef.coord = c(0,1.1), 
+            ylim           = c(0,1.1),
+            xlim           = c(0,1),
+  ) +
+    scale_y_continuous(breaks = c(0,0.25,0.5,0.75,1)) +
+    scale_x_continuous(breaks = c(0,0.25,0.5,0.75,1)) +
+    theme_pubr(border = T)+
+    theme(axis.title = element_text(face = "italic"),
+          aspect.ratio = 1)
+  ggsave(file.name, width = width, height = height)
+}
+
+
+##========================================================================================================================
 ## DGIdb drugability plots helper functions
 ##========================================================================================================================
 shape.DGI.gene.pathway.overlap <- function(x = intersected.pathways.foamy.ont.unique.Mye.type.markers){
@@ -367,8 +406,9 @@ check.date <- function(x){
 #=========================================================================================================================
 ## Plot a cseries of ustomised plots for stratified expression
 ##========================================================================================================================
-stratPlots <- function(object = samples.seurat, group.by = NULL, features = "GAPDH", cols = NULL, x.label = "Stratified", name = "plot_basename", ncol = 1){
-   p1 <- VlnPlot(object   = object, 
+stratPlots <- function(object = samples.seurat, assay = "RNA", group.by = NULL, features = "GAPDH", cols = NULL, x.label = "Stratified", name = "plot_basename", ncol = 1){
+   p1 <- VlnPlot(object  = object,
+                 assay   = "RNA",  
                 features = features, 
                 group.by = group.by, 
                 cols     = cols, 
@@ -377,10 +417,10 @@ stratPlots <- function(object = samples.seurat, group.by = NULL, features = "GAP
   
   ggsave(paste(name, " - violin plot.pdf", sep = ""), height = 5*(length(features)/ncol), plot = p1)
 
-  DotPlot(object = object, features = features, group.by = group.by, cols = "Spectral", dot.scale = 15) + scale_colour_gsea()
+  DotPlot(object = object, assay = "RNA", features = features, group.by = group.by, cols = "Spectral", dot.scale = 15) + scale_colour_gsea()
   ggsave(paste(name, " - dot plot.pdf", sep = ""), width = 2*length(features))
   
-  FeaturePlot(object = object, features = features, pt.size = 2, split.by = group.by, cols = c("grey", "firebrick"), order = T, ncol = ncol)
+  FeaturePlot(object = object, assay = "RNA", features = features, pt.size = 2, split.by = group.by, cols = c("grey", "firebrick"), order = T, ncol = ncol)
   ggsave(paste(name, " - feature plot.pdf", sep = ""), height = 5*(length(features)/ncol), width = 5*(length(features)/ncol))
 }
 
@@ -388,14 +428,24 @@ stratPlots <- function(object = samples.seurat, group.by = NULL, features = "GAP
 #==================================================================================================================================
 ## Stratify the seurat object based on expresion quntile of a given gene, and Plot a series of custom plots for stratified data.
 ##=================================================================================================================================
-stratifyByExpression <- function(object = all.seur.combined, strat.by = "GAPDH", gene.groups = list("Foamy genes" = c("ABCA1", "ABCG1", "OLR1"), "Resident genes" = c("LYVE1", "MRC1", "FOLR2"), "LAM genes" = c("TREM2", "CD9", "GPNMB"), "Inflammatory genes" = c("IL1B", "TNF", "NLRP3", "CASP1")), file.name = "myplot", return.object = T, do.plot = T, verbose = T, onlyUMAP = F, lower.quantile = 0.25, upper.quantile = 0.75){
-  # Get marker expression levels
-  if(!strat.by %in% row.names(object)){
-    cat(strat.by, "not present in this Seurat object's RNA assay!\n")
+stratifyByExpression <- function(object = all.seur.combined, assay = "RNA", strat.by = "GAPDH", gene.groups = list("Foamy genes" = c("ABCA1", "ABCG1", "OLR1"), "Resident genes" = c("LYVE1", "MRC1", "FOLR2"), "LAM genes" = c("TREM2", "CD9", "GPNMB"), "Inflammatory genes" = c("IL1B", "TNF", "NLRP3", "CASP1")), file.name = "myplot", return.object = T, do.plot = T, verbose = T, onlyUMAP = F, lower.quantile = 0.25, upper.quantile = 0.75){
+  # Sanity check gene.groups
+  if(!onlyUMAP & type(gene.groups) != "list"){
+    cat("ERROR: gene.groups argument has to be a named list of vectors with gene names!\n")
     if(return.object){
       return(object)
     }else{
-      return()
+      return(invisible(NULL))
+    }
+  }
+  
+  # Get marker expression levels
+  if(!strat.by %in% row.names(object)){
+    cat("ERROR:", strat.by, "not present in this Seurat object's RNA assay!\n")
+    if(return.object){
+      return(object)
+    }else{
+      return(invisible(NULL))
     }
   }
   
@@ -433,13 +483,15 @@ stratifyByExpression <- function(object = all.seur.combined, strat.by = "GAPDH",
   # Plot the stratification
   if(do.plot){
     VlnPlot(object   = object, 
+            assay    = assay, 
             features = strat.by, 
             group.by = marker.col, 
             cols     = c("grey", "bisque", "coral", "firebrick")) + xlab(paste("Stratified by", strat.by ,"expression", sep = " "))
     ggsave(filename  = paste(file.name, " - violin.pdf"))
     
     customUMAP(object    = object, 
-               group.by  = marker.col,
+               assay     = assay,
+               group.by  = marker.col, 
                pt.size   = 4, 
                cols      = c("grey", "bisque", "coral", "firebrick"), 
                title     = paste(strat.by, "expression", sep = " "),
@@ -449,6 +501,7 @@ stratifyByExpression <- function(object = all.seur.combined, strat.by = "GAPDH",
     if(!onlyUMAP){
       for(theGroup in names(gene.groups)){
         stratPlots(object   = object, 
+                   assay    = assay,
                    group.by = marker.col, 
                    features = gene.groups[[theGroup]], 
                    cols     = c("grey", "bisque", "coral", "firebrick"),
@@ -663,9 +716,9 @@ customFeature <- function(object = samples.seurat, cols = c("grey", "blue"), fea
 ## Don't add .pdf to the name here as we are making compund names based on the settings used!
 ## Implemented: feature, violins and DotPlots
 ##========================================================================================================================
-bunchOfCustomPlots <- function(object = samples.seurat, idents = NULL, group.by = NULL, features = "GAPDH", assay = "RNA", Vln.draw.names = T, name = "plot_name", feature.pt.size = 3, Vln.pt.size = 0, dot.scale = 7, Vln.width = 15, Vln.height = 15, Vln.stack = FALSE, Vln.color = NULL, Dot.width = "auto", Dot.height = "auto", ncol = NULL){
+bunchOfCustomPlots <- function(object = samples.seurat, idents = NULL, group.by = NULL, features = "GAPDH", assay = "RNA", reduction = "umap", Vln.draw.names = T, name = "plot_name", feature.pt.size = 3, Vln.pt.size = 0, dot.scale = 7, Vln.width = 15, Vln.height = 15, Vln.stack = FALSE, Vln.color = NULL, Dot.width = "auto", Dot.height = "auto", ncol = NULL){
   # Feature plot
-  customFeature(object = object, features = features, name = paste(name, " - feature plot.pdf", sep = ""), ncol = ncol, pt.size = feature.pt.size)
+  customFeature(object = object, features = features, name = paste(name, " - feature plot.pdf", sep = ""), ncol = ncol, pt.size = feature.pt.size, reduction = reduction)
 
   # Violin plots
   customVln(object = object, idents = idents, group.by = group.by, features = features, assay = assay, draw.names = Vln.draw.names, name = paste(name, " - violin plot.pdf", sep = ""), width = Vln.width, height = Vln.height, pt.size = Vln.pt.size, ncol = ncol, stack = Vln.stack, cols = Vln.color)

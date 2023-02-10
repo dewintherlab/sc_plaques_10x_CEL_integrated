@@ -123,7 +123,7 @@ saveRDS(pbmc.monocytes.seurat, "Seurat_Objects/pbmc.monocytes.seurat.RDS")
 ## Define marker genes per cluster
 pbmc.monocytes.seurat.markers <- FindAllMarkers(object = pbmc.monocytes.seurat, only.pos = TRUE, min.pct = 0.25, thresh = 0.25)
 
-# Save the top9 markers per cluster
+# Save the top markers per cluster
 sep.markers <- pbmc.monocytes.seurat.markers %>% group_by(cluster) %>% top_n(9, avg_log2FC)
 
 # plot the top9 markers per cluster
