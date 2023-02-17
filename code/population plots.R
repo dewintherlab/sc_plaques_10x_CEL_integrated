@@ -97,8 +97,11 @@ celltypes.43p[grep("CD79", celltypes.43p)] <- "B Cells"
 # NK Cells
 celltypes.43p[grep("NK", celltypes.43p)] <- "NK Cells"
 
-# Myeloid cells
-celltypes.43p[grep("CD68", celltypes.43p)] <- "Myeloid Cells"
+# Dendritic cells
+celltypes.43p[grep("Dendritic", celltypes.43p)] <- "Dendritic Cells"
+
+# Macrophages
+celltypes.43p[grep("CD68", celltypes.43p)] <- "Macrophages"
 
 # SMC
 celltypes.43p[grep("ACTA", celltypes.43p)] <- "Smooth Muscle Cells"
@@ -122,11 +125,14 @@ celltypes.43p.cols <- c(celltypes.43p.cols, "chartreuse4")
 # NK
 celltypes.43p.cols <- c(celltypes.43p.cols, "mediumslateblue")
 
-# Myeloid
+# Macrophages
 celltypes.43p.cols <- c(celltypes.43p.cols, "dodgerblue2")
 
 # SMC
 celltypes.43p.cols <- c(celltypes.43p.cols, "chartreuse2")
+
+# DC
+celltypes.43p.cols <- c(celltypes.43p.cols, "cadetblue2")
 
 # B
 celltypes.43p.cols <- c(celltypes.43p.cols, "purple")
@@ -680,7 +686,7 @@ customDot(final.pop.call.integrated.mye.seurat, features = d.targets, group.by =
 DimPlot(full.43p.seurat, group.by = "celltypes.43p", cols = celltypes.43p.cols) + NoLegend()
 
 # Define some cell type markers
-celltype.markers <- c("CD3E", "CD8A", "CD4", "CD14", "CD68", "NCAM1", "CD79A", "ACTA2", "CD34")
+celltype.markers <- c("CD3E", "CD8A", "CD4", "CD68", "CD1C", "NCAM1", "CD79A", "ACTA2", "CD34")
 
 # And make some plots
 bunchOfCustomPlots(object          = full.43p.seurat, 
