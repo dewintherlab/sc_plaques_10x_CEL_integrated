@@ -723,4 +723,7 @@ DoHeatmap(object       = full.43p.seurat.celltype.idents,
 ggsave(filename = "various_plots/43p celltypes - heatmap.pdf")
 
 
+# Random genes
+customVln(object = integrated.mye.seurat, features = "FABP4", splitPlot = F, assay = "RNA", name = "various_plots/FABP4.pdf")
+
 
