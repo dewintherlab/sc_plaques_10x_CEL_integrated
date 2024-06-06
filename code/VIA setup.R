@@ -6,7 +6,7 @@
 use_condaenv('ViaEnv')
 
 # For cellrank adn decoupler
-use_condaenv('cellrank')
+use_condaenv('cellrank', conda = "/Users/koenprange/mambaforge/bin/conda")
 rm(py)
 reticulate::py_config()
 

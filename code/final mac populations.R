@@ -352,6 +352,22 @@ customVln(features  = refined.pop.id.genes,
           name      = "final_mac_pops/Curated population ID genes - refined - violin take 2.pdf", 
           width     = 20, height = 20, draw.names = F, cols = M.int_refined.pop.colors, stack = F)
 
+# Tweak based on latest Monaco paper
+refined.pop.id.genes[19] <- "TREM1"
+
+customVln(features  = refined.pop.id.genes, 
+          object    = final.pop.call.integrated.mye.seurat,
+          ncol      = 3,
+          name      = "final_mac_pops/Curated population ID genes - refined - violin take 3.pdf", 
+          width     = 20, height = 20, draw.names = F, cols = M.int_refined.pop.colors, stack = F)
+
+# Tweak 4: son of tweak (USe c1qa as res markers to keep in line with lit)
+refined.pop.id.genes[12] <- "C1QA"
+customVln(features  = refined.pop.id.genes, 
+          object    = final.pop.call.integrated.mye.seurat,
+          ncol      = 3,
+          name      = "final_mac_pops/Curated population ID genes - refined - violin take 4.pdf", 
+          width     = 20, height = 20, draw.names = F, cols = M.int_refined.pop.colors, stack = F)
 
 # Lam and res markers
 customVln(features  = c("CD9", "TREM2", "GPNMB", "SPP1", "FOLR2", "LYVE1", "MRC1", "SIGLEC1"), 
@@ -403,6 +419,67 @@ bunchOfCustomPlots(object          = final.pop.call.from_full.integrated.mye.seu
                    feature.pt.size = 2, 
                    Vln.width       = 20, 
                    Vln.height      = 20, Vln.color = M.int_refined.pop.colors, name = "final_mac_pops/CCR7")
+
+
+## Markers used for subset MACE associations
+mace.markers <- c("PLIN2", "TREM1", "VEGFA", "ERO1A", "FBP1", "OLR1", "PLTP", "MRC1", "FOLR2", "SELENOP", "MAF", "F13A1", "CCL18", "S100A8", "FCN1", "FGL2", "CFP", "MNDA", "S100A12", "PLAC8", "TREM2", "FABP5", "MMP9")
+bunchOfCustomPlots(object          = archetype.final.pop.call.from_full.integrated.mac.seurat, 
+                   features        = mace.markers,
+                   group.by        = "archetype",
+                   assay           = "RNA", 
+                   Vln.draw.names  = F, 
+                   feature.pt.size = 2, 
+                   Vln.width       = 20, 
+                   Vln.height      = 20, 
+                   ncol            = 4,
+                   Vln.color       = archetype.colors, 
+                   name            = "final_mac_pops/MACE.markers")
+
+bunchOfCustomPlots(object          = integrated.full.seurat, 
+                   features        = mace.markers,
+                   group.by        = "archetype", 
+                   assay           = "RNA", 
+                   Vln.draw.names  = F, 
+                   feature.pt.size = 2, 
+                   Vln.width       = 20, 
+                   Vln.height      = 20, 
+                   ncol            = 4,
+                   Vln.color       = full_set.arch.colors, 
+                   name            = "final_mac_pops/MACE.markers.all_celltypes")
+
+# Separate the mac types
+mace.sub.markers           <- list()
+mace.sub.markers[["Foam"]] <- mace.markers[1:6]
+mace.sub.markers[["Res"]]  <- mace.markers[7:13]
+mace.sub.markers[["Inf"]]  <- mace.markers[14:20]
+mace.sub.markers[["Lam"]]  <- mace.markers[21:23]
+
+for(theType in names(mace.sub.markers)){
+  cat(theType," macs\n")
+  bunchOfCustomPlots(object          = archetype.final.pop.call.from_full.integrated.mac.seurat, 
+                     features        = mace.sub.markers[[theType]],
+                     group.by        = "archetype",
+                     assay           = "RNA", 
+                     Vln.draw.names  = F, 
+                     feature.pt.size = 2, 
+                     Vln.width       = 20, 
+                     Vln.height      = 20, 
+                     ncol            = 3,
+                     Vln.color       = archetype.colors, 
+                     name            = paste("final_mac_pops/MACE.", theType, ".markers", sep = ""))
+  cat(theType," full\n")
+  bunchOfCustomPlots(object          = integrated.full.seurat, 
+                     features        = mace.sub.markers[[theType]],
+                     group.by        = "archetype", 
+                     assay           = "RNA", 
+                     Vln.draw.names  = F, 
+                     feature.pt.size = 2, 
+                     Vln.width       = 20, 
+                     Vln.height      = 20, 
+                     ncol            = 3,
+                     Vln.color       = full_set.arch.colors, 
+                     name            = paste("final_mac_pops/MACE.", theType, ".markers.all_celltypes", sep = ""))
+}
 
 
 ## Run monocle analysis
@@ -701,8 +778,8 @@ dev.off()
 ## Set up archetypes
 archetypes <- as.vector(Idents(final.pop.call.integrated.mye.velocyto.seurat))
 archetypes[grep("Foamy", archetypes)]        <- "Foamy"
-archetypes[grep("Resident", archetypes)]     <- "Resident"
-archetypes[grep("Lipid", archetypes)]        <- "Resident"
+archetypes[grep("Lipid", archetypes)]        <- "LAM"
+archetypes[grep("Resident", archetypes)]     <- "Resident-like"
 archetypes[grep("Monocyte-derived", archetypes)] <- "Inflammatory"
 
 # Sanity check
@@ -712,7 +789,7 @@ levels(as.factor(archetypes))
 final.pop.call.integrated.mye.velocyto.seurat <- AddMetaData(final.pop.call.integrated.mye.velocyto.seurat,metadata = archetypes, col.name = "archetype")
 
 # Set up colors
-archetype.colors <- c("Resident" = "#528347", "Inflammatory" = "#87482F", "Foamy" = "#9476A3", "Monocytes" = "#6495ED")
+archetype.colors <- c("Resident-like" = "#528347", "Inflammatory" = "#87482F", "Foamy" = "#9476A3", "Monocytes" = "#6495ED", "LAM" = "#7FFF00")
 
 ## Set up archetypes as default idents in a new object
 archetype.integrated.mye.velocyto.seurat         <- AddMetaData(final.pop.call.integrated.mye.velocyto.seurat, metadata = Idents(final.pop.call.integrated.mye.velocyto.seurat), col.name = "final.pop.idents")
@@ -764,21 +841,22 @@ DoHeatmap(archetype.integrated.mye.velocyto.seurat, group.colors = archetype.col
 ggsave("archetypes/heatmap.pdf")
 
 # Selected markers
-selected.markers <- c("PLTP", "GPNMB", "TREM2", 
-                      "IFITM2", "TNFSF10", "S100A8",
-                      "VEGFA", "PLIN2", "OLR1")
+selected.markers <- c("PLTP", "MRC1", 
+                      "TREM2", "CD9",
+                      "IFITM2", "S100A8",
+                      "TREM1", "PLIN2")
 bunchOfCustomPlots(features  = selected.markers, 
                    object    = archetype.integrated.mye.velocyto.seurat,
                    name      = paste("archetypes/selected markers", sep = ""),
                    Vln.color = archetype.colors,
                    Vln.width = 25, Vln.height = 25)
 
-customVln(features  = unique(refined.pop.id.genes), 
+customVln(features  = selected.markers, 
                    object    = archetype.integrated.mye.velocyto.seurat,
-                   ncol = 3,
+                   ncol      = 2,
                    name      = "archetypes/refined markers.pdf",
-                   col = archetype.colors,
-                   width = 25, height = 25)
+                   col = archetype.colors, draw.names = F,
+                   width = 13, height = 20)
 
 ## Get ontologies
 # Top 5
@@ -792,4 +870,183 @@ for(i in levels(Idents(archetype.integrated.mye.velocyto.seurat))){
   x <- archetype.markers[which(archetype.markers$cluster == i),-6]
   get_ontology(x, name = paste("Top 10", i, sep = " "), outdir = "archetypes", universe = archetype.integrated.mye.velocyto.seurat, full_GSEA = F, volcano.plot = F, plot.top.n = 10) 
 }
+
+
+## Print some extra targets fomr monaco paper
+bunchOfCustomPlots(object = final.pop.call.integrated.mye.seurat, features = "TREM1", assay = "RNA", name = "various_plots/Monaco_targets/TREM1", Vln.color = M.int_refined.pop.colors)
+bunchOfCustomPlots(object = final.pop.call.integrated.mye.seurat, features = c("TREM1","TREM2","PLIN2"), ncol = 3, Vln.width = 15, Vln.height = 5, assay = "RNA",Vln.draw.names = F, name = "various_plots/Monaco_targets/infLAM", Vln.color = M.int_refined.pop.colors)
+
+## Print some tryp metabolism targets for Teunis and Hanssen
+# Load the genes
+trypmetgenes <- scan("tryp_met_genes.txt", what = "list")
+trypmetgenes <- unique(trypmetgenes)
+trypmetgenes <- AnnotationDbi::select(org.Hs.eg.db, keys = trypmetgenes, keytype = "ALIAS", columns = "SYMBOL")$SYMBOL
+
+# Set the archetypes
+final.pop.call.integrated.mye.seurat <- AddMetaData(final.pop.call.integrated.mye.seurat, metadata = Idents(final.pop.call.integrated.mye.seurat), col.name = "sub.pops")
+final.pop.call.integrated.mye.seurat <- RenameIdents(final.pop.call.integrated.mye.seurat, "CD14+-IL1B+SELL+CD16+ Migrating Inflammatory Monocyte-derived Macrophages" = "Inflammatory", 
+                              "CD14+IL1B+SELL+MX1+ Interferon Activated Inflammatory Monocyte-derived Macrophages" = "Inflammatory", 
+                              "CD14+IL1B+SELL+S100A8+ Migrating Inflammatory Monocyte-derived Macrophages" = "Inflammatory", 
+                              "CD14+TREM2-TIMP1+HSPA6+ Lipid-stress Activated Foamy Macrophages" = "Foamy", 
+                              "CD14+TREM2-OLR1+NLRP3+ Inflammatory Foamy Macrophages" = "Foamy", 
+                              "CD14+TREM2-OLR1+ABCA+ Foamy Macrophages" = "Foamy",
+                              "CD14+TNF+TREM2+FOLR2+ Inflammatory Resident-like Lipid Associated Macrophages" = "LAM",
+                              "CD14+IL1B-TREM2-FOLR2+ Resident-like Macrophages" = "Resident-like",
+                              "CD14+TREM2+FOLR2-ABCG+ Lipid Associated Macrophages" = "LAM")
+final.pop.call.integrated.mye.seurat <- AddMetaData(final.pop.call.integrated.mye.seurat, metadata = Idents(final.pop.call.integrated.mye.seurat), col.name = "archetype")
+Idents(final.pop.call.integrated.mye.seurat) <- final.pop.call.integrated.mye.seurat$sub.pops
+
+# And plot!
+DefaultAssay(final.pop.call.integrated.mye.seurat) <- "RNA"
+arch.cols <- c("Inflammatory" = "red4", "Foamy" = "purple2", "Resident-like" = "#61C400", "LAM" = "#7FFF00")
+bunchOfCustomPlots(object = final.pop.call.integrated.mye.seurat, features = trypmetgenes, group.by = "archetype", name = "trypmetgenes", Vln.width = 25, Vln.height = 30, ncol = 4, Vln.color = arch.cols, Vln.pt.size = 1, feature.pt.size = 1)
+customUMAP(object = final.pop.call.integrated.mye.seurat, group.by = "archetype", pt.size = 3, shuffle = T, seed = 666, file.name = "Macrophage UMAP.pdf", cols = arch.cols)
+
+
+
+## Print some 'monocyte X' genes for van Zonneveld en de Boer
+# Load the genes
+monoXgenes <- scan("monoX_genes.txt", what = "list")
+monoXgenes <- unique(monoXgenes)
+
+# And plot!
+DefaultAssay(final.pop.call.from_full.integrated.mye.seurat) <- "RNA"
+bunchOfCustomPlots(object = final.pop.call.from_full.integrated.mye.seurat, features = monoXgenes, name = "monoXgenes", Vln.width = 25, Vln.height = 30, ncol = 3, Vln.color = M.int_refined.pop.colors, Vln.pt.size = 1, Vln.draw.names = F, feature.pt.size = 0.5)
+customUMAP(object = final.pop.call.from_full.integrated.mye.seurat, pt.size = 3, shuffle = T, seed = 666, file.name = "Macrophage and monocyte UMAP.pdf", cols = M.int_refined.pop.colors, legend.pos = "right", plot.width = 15)
+customFeature(object = final.pop.call.from_full.integrated.mye.seurat, features = "SECISBP2L", name = "monoX SLAN feature.pdf", pt.size = 2)
+
+
+## Update the idents of the full integrated seurat object
+unique(Idents(integrated.full.seurat))
+
+integrated.full.seurat <- AddMetaData(integrated.full.seurat, metadata = Idents(integrated.full.seurat), col.name = "sub.pops")
+integrated.full.seurat <- RenameIdents(integrated.full.seurat, "CD14+-IL1B+SELL+CD16+ Migrating Inflammatory Monocyte-derived Macrophages" = "Inflammatory", 
+                                                     "CD14+IL1B+SELL+MX1+ Interferon Activated Inflammatory Monocyte-derived Macrophages" = "Inflammatory", 
+                                                     "CD14+IL1B+SELL+CD16- Antigen-presenting Inflammatory Monocyte-derived Macrophages" = "Inflammatory",
+                                                     "CD14+IL1B+SELL+S100A8+ Migrating Inflammatory Monocyte-derived Macrophages" = "Inflammatory", 
+                                                     "CD14+TREM2-TIMP1+HSPA6+ Lipid-stress Activated Foamy Macrophages" = "Foamy", 
+                                                     "CD14+TREM2-OLR1+NLRP3+ Inflammatory Foamy Macrophages" = "Foamy", 
+                                                     "CD14+TREM2-OLR1+ABCA+ Foamy Macrophages" = "Foamy",
+                                                     "CD14+TNF+TREM2+FOLR2+ Inflammatory Resident-like Lipid Associated Macrophages" = "LAM",
+                                                     "CD14+IL1B-TREM2-FOLR2+ Resident-like Macrophages" = "Resident-like",
+                                                     "CD14+TREM2+FOLR2-ABCG+ Lipid Associated Macrophages" = "LAM")
+integrated.full.seurat <- AddMetaData(integrated.full.seurat, metadata = Idents(integrated.full.seurat), col.name = "archetype")
+Idents(integrated.full.seurat) <- integrated.full.seurat$sub.pops
+unique(Idents(integrated.full.seurat))
+
+# And plot!
+DefaultAssay(integrated.full.seurat) <- "RNA"
+full_set.arch.colors <- c(full_set.colors, arch.cols)
+customUMAP(object = integrated.full.seurat, group.by = "archetype", pt.size = 1, shuffle = T, seed = 666, file.name = "Full UMAP.pdf", cols = full_set.arch.colors, legend.pos = "right", plot.width = 20)
+
+## Save the objects
+# Full set 43 patients cel-seq and 10X cells cleaned, idents resolved, and mac archetypes added seurat object
+saveRDS(integrated.full.seurat, file = "Seurat_Objects/full.43p_10X.integrated.cleaned.archetypes.seurat.RDS")
+
+# Full set 43 patients cel-seq and 10X cells cleaned, idents resolved, and mac archetypes added pop colors
+saveRDS(full_set.arch.colors, file = "Seurat_Objects/full.43p_10X.integrated.cleaned.archetypes.pop_colors.RDS")
+
+
+## Correlation bewteen key genes and phenotype
+key.genes <- c("TREM1", "TREM2", "CD9", "MRC1", "IL1B", "S100A9", "PLTP", "GPNMB", "CASP1", "S100A8","TNF", "FOLR2", "HSPA6", "OLR1", "PLIN2", "SELL", "FCGR3A", "MX1")
+key.genes <- c("ABCA1", "ABCG1")
+key.genes <- c("CASP3", "NLRP3", "TLR4", "CASP4", "IL18", "PYCARD")
+key.genes <- c("CD2","ITGAM", "ITGAX", "PECAM1", "NCAM1", "CCR2", "CCR5", "CX3CR1", "CSF1R")
+key.genes <- c("LAMP3", "OAS1", "IFIT1")
+
+dir.create("final_mac_pops/correlations", showWarnings = F, recursive = T)
+
+## Extract mac cells
+## Transfer labels from final pops
+idents     <- Idents(final.pop.call.integrated.mye.seurat)
+idents.43p <- Idents(full.43p.seurat)
+idents     <- idents[names(idents) %in% names(idents.43p)]
+length(idents)
+mye.43p.seurat <- subset(full.43p.seurat, cells = names(idents))
+Idents(mye.43p.seurat) <- idents
+customUMAP(object = mye.43p.seurat, cols = M.int_refined.pop.colors, file.name = "final_mac_pops/correlations/43p.mye.UMAP.pdf", legend.pos = "right", plot.width = 15)
+
+# Add archetypes
+mye.43p.seurat <- AddMetaData(mye.43p.seurat, metadata = Idents(mye.43p.seurat), col.name = "sub.pops")
+mye.43p.seurat <- RenameIdents(mye.43p.seurat, "CD14+-IL1B+SELL+CD16+ Migrating Inflammatory Monocyte-derived Macrophages" = "Inflammatory", 
+                                       "CD14+IL1B+SELL+MX1+ Interferon Activated Inflammatory Monocyte-derived Macrophages" = "Inflammatory", 
+                                       "CD14+IL1B+SELL+CD16- Antigen-presenting Inflammatory Monocyte-derived Macrophages" = "Inflammatory",
+                                       "CD14+IL1B+SELL+S100A8+ Migrating Inflammatory Monocyte-derived Macrophages" = "Inflammatory", 
+                                       "CD14+TREM2-TIMP1+HSPA6+ Lipid-stress Activated Foamy Macrophages" = "Foamy", 
+                                       "CD14+TREM2-OLR1+NLRP3+ Inflammatory Foamy Macrophages" = "Foamy", 
+                                       "CD14+TREM2-OLR1+ABCA+ Foamy Macrophages" = "Foamy",
+                                       "CD14+TNF+TREM2+FOLR2+ Inflammatory Resident-like Lipid Associated Macrophages" = "LAM",
+                                       "CD14+IL1B-TREM2-FOLR2+ Resident-like Macrophages" = "Resident-like",
+                                       "CD14+TREM2+FOLR2-ABCG+ Lipid Associated Macrophages" = "LAM")
+mye.43p.seurat <- AddMetaData(mye.43p.seurat, metadata = Idents(mye.43p.seurat), col.name = "archetype")
+Idents(mye.43p.seurat) <- mye.43p.seurat$sub.pops
+unique(Idents(mye.43p.seurat))
+
+# And plot!
+DefaultAssay(mye.43p.seurat) <- "RNA"
+full_set.arch.colors <- c(full_set.colors, arch.cols)
+customUMAP(object = mye.43p.seurat, group.by = "archetype", shuffle = T, seed = 666, file.name = "final_mac_pops/correlations/43p.mye.archetype.UMAP.pdf", cols = full_set.arch.colors, legend.pos = "right", plot.width = 15)
+
+## Process metadata
+# Read the file
+meta.data <- read.xlsx(file = "raw_data/2021-09-16 AtheroExpress Database Marie.xlsx", sheetIndex = 1, header = T, as.data.frame = T)
+dim(meta.data)
+
+# Fix NA values
+# Work-around weird 'charToDate()' error when checking if a string is NA while there is a date like structure in the string by forcing those columns to 'factor'
+for(theCol in colnames(meta.data)[grep("date", colnames(meta.data), ignore.case = T)]){
+  meta.data[, theCol] <- factor(meta.data[, theCol])
+}
+meta.data[meta.data == "NA"] <- NA
+
+# Filter on quantity of NAs (keep only columns with less than 10% NA)
+max.na    <- floor(nrow(meta.data) * 0.10)
+meta.data <- meta.data[,colSums(apply(meta.data, 1:2, is.na)) <= max.na]
+dim(meta.data)
+
+# Filter out columns with the same value for all rows
+meta.data <- meta.data[,apply(meta.data, 2, function(x)length(unique(x))) > 1]
+dim(meta.data)
+
+# Filter out columns with the same value or NA for all rows
+meta.data <- meta.data[,!(apply(meta.data, 2, function(x)length(unique(x))) == 2 & colSums(apply(meta.data, 1:2, is.na)) > 0)]
+dim(meta.data)
+
+## Add metadata to 43p seurat object (as we don't have htis info for the 10X guys)
+# Fetch patient information per cell
+md.df <- data.frame(Patient=mye.43p.seurat$Patient)
+
+# Expand metadata to all cells
+md.df <- merge(md.df, meta.data, by.x = 1, by.y = 2, all.x = T)
+md.df$Patient <- NULL
+
+# And add to the Seurat object
+for (i in names(md.df)){
+  mye.43p.seurat <- AddMetaData(mye.43p.seurat, md.df[,i], col.name = i)
+}
+
+## Loop over the genes and traits
+ToI <- c("Symptoms.5G", "AsymptSympt", "Med.statin", "Phenotype", "Sex")
+for (theGene in key.genes){
+  for(theTrait in ToI){
+    cat(theGene, theTrait, "\n")
+    nona.seurat <- subset(mye.43p.seurat, cells = row.names(mye.43p.seurat@meta.data[!is.na(mye.43p.seurat@meta.data[,theTrait]),]))
+    pv <- kruskal.test(GetAssayData(nona.seurat)[theGene,]~nona.seurat@meta.data[,theTrait])$p.value
+    df <- data.frame(x = GetAssayData(nona.seurat)[theGene,], y = nona.seurat@meta.data[,theTrait])
+    ggplot(df) + geom_boxplot(aes(y, x, fill = y)) + 
+      theme_pubclean(base_size = 32) +
+      theme(legend.position = "none") + scale_fill_futurama() +
+      ylab(paste(theGene, "Expression", sep = " ")) +
+      xlab(theTrait) + 
+      annotate(geom = 'text', label = paste("p=",round(pv, digits = 2), sep =""), x = -Inf, y = Inf, hjust = 0, vjust = 1, size = 10, fontface = "bold") + 
+      ggtitle(paste(theGene,"correlation with", theTrait, sep = " "))
+    dir.create(paste("final_mac_pops/correlations/", theGene, " Individual trait correlation/", sep = ""), showWarnings = F, recursive = T)
+    ggsave(filename = paste("final_mac_pops/correlations/", theGene, " Individual trait correlation/", theGene, " correlation with ", theTrait,".pdf", sep = ""))
+    
+    if(which(ToI == theTrait) == 1){
+      stratifyByExpression(object = nona.seurat, strat.by = theGene, return.object = F, do.plot = T, onlyUMAP = T, file.name = paste("final_mac_pops/correlations/", theGene, " Individual trait correlation/", theGene, " stratified feature plot.pdf", sep = ""))
+    }
+  }
+}
+
 

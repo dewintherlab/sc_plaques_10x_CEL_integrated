@@ -1,6 +1,7 @@
 ## Install packages
 # install.packages(c("BiocManager", "devtools", "rmarkdown", "Rcpp", "RcppArmadillo", "xlsx"))
-# BiocManager::install(c("Seurat", "Signac", "ggplot2", "patchwork", "dplyr", "reshape2", "pheatmap", "varhandle", "ggsci", "limma", "ggpubr", "AnnotationDbi", "org.Hs.eg.db", "msigdbr", "dittoSeq", "EGSEA", "biomaRt", "escape", "IRanges", "gage", "pcaMethods", "ggsignif","qusage"))
+# BiocManager::install(c("Seurat", "rDGIdb", "anndata", "Signac", "ggplot2", "patchwork", "dplyr", "reshape2", "pheatmap", "varhandle", "ggsci", "limma", "ggpubr", "AnnotationDbi", "org.Hs.eg.db", "msigdbr", "dittoSeq", "EGSEA", "biomaRt", "escape", "IRanges", "gage", "pcaMethods", "ggsignif","qusage", "EnhancedVolcano"))
+
 # Sys.unsetenv("GITHUB_PAT")
 # devtools::install_github("mojaveazure/seurat-disk")
 # devtools::install_github("velocyto-team/velocyto.R")
@@ -12,7 +13,7 @@
 # devtools::install_github('cole-trapnell-lab/monocle3')
 #
 # renv::activate()
-# renv::snapshot()
+# renv::snapshot()  
 
 
 ## Load Packages
@@ -48,7 +49,21 @@ library(varhandle)
 library(rDGIdb)
 library(scales)
 library(reticulate)
-
+library(anndata)
+library(decoupleR)
+library(DESeq2)
+library(BiocParallel)
+library(anndata)
+library(EnhancedVolcano)
+library(AUCell)
+library(mixtools)
+library(RColorBrewer)
+library(hgug4112a.db)
+library(drc)
+library(nlme)
+library(aomisc)
+library(pathviewr)
+register(MulticoreParam(6))
 
 # Load custom functions
 source("code/functions.R")

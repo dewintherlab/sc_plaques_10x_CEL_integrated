@@ -151,6 +151,9 @@ integrated.full.seurat <- readRDS(file = "Seurat_Objects/full.43p_10X.integrated
 # Full set 43 patients cel-seq and 10X cells cleaned and idents resolved seurat object
 integrated.full.seurat <- readRDS(file = "Seurat_Objects/full.43p_10X.integrated.cleaned.seurat.RDS")
 
+# Full set 43 patients cel-seq and 10X cells cleaned and idents resolved to archetypes seurat object
+integrated.full.seurat <- readRDS(file =  "Seurat_Objects/full.43p_10X.integrated.cleaned.archetypes.seurat.RDS")
+
 # From Full set 43 patients cel-seq and 10X cells cleaned and idents resolved myeloid  seurat object
 from_full.integrated.mye.seurat <- readRDS(file = "Seurat_Objects/from_full.43p_10X.integrated.cleaned.mye.seurat.RDS")
 
@@ -164,6 +167,8 @@ full.43p.seurat <- readRDS(file = "Seurat_Objects/full_43p.idents_refiened.RDS")
 final.pop.call.from_full.integrated.mye.seurat          <- readRDS(file = "Seurat_Objects/final.pop.call.from_full.integrated.mye.seurat.Rds")
 final.pop.call.from_full.integrated.mye.velocyto.seurat <- readRDS(file = "Seurat_Objects/final.pop.call.mye.velo_pbmc_plaque.integrated.mapped.refined_populations.seurat.RDS")
 final.pop.call.integrated.mye.velocyto.seurat           <- readRDS(file = "Seurat_Objects/mye.velo_plaque.integrated.mapped.refined_populations.seurat.RDS")
+final.pop.call.integrated.full.seurat                   <- readRDS(file = "Seurat_Objects/final.pop.call.integrated.full.seurat.Rds")
+
 
 ## Marker genes
 # All markers from all patients and idents

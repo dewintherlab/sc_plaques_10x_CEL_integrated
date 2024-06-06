@@ -100,15 +100,20 @@ celltypes.43p[grep("NK", celltypes.43p)] <- "NK Cells"
 # Dendritic cells
 celltypes.43p[grep("Dendritic", celltypes.43p)] <- "Dendritic Cells"
 
+# Mastocytes
+celltypes.43p[grep("KIT", celltypes.43p)] <- "Mastocytes"
+
 # Macrophages
 celltypes.43p[grep("CD68", celltypes.43p)] <- "Macrophages"
 
 # SMC
 celltypes.43p[grep("ACTA", celltypes.43p)] <- "Smooth Muscle Cells"
 
-# Endothelial cells
-celltypes.43p[grep("Endo", celltypes.43p)] <- "Endothelial Cells"
+# Endothelial cells II
+celltypes.43p[grep("Endothelial Cells II", celltypes.43p)] <- "Endothelial Cells II"
 
+# Endothelial cells I
+celltypes.43p[grep("Endothelial Cells I$", celltypes.43p)] <- "Endothelial Cells I"
 
 # Add back to the seurat object
 full.43p.seurat$celltypes.43p <- celltypes.43p
@@ -119,7 +124,7 @@ unique(celltypes.43p)
 # T
 celltypes.43p.cols <- "orange3"
 
-# Endothelial
+# Endothelial I
 celltypes.43p.cols <- c(celltypes.43p.cols, "chartreuse4")
 
 # NK
@@ -131,11 +136,17 @@ celltypes.43p.cols <- c(celltypes.43p.cols, "dodgerblue2")
 # SMC
 celltypes.43p.cols <- c(celltypes.43p.cols, "chartreuse2")
 
+# Endothelial II
+celltypes.43p.cols <- c(celltypes.43p.cols, "chartreuse3")
+
 # DC
 celltypes.43p.cols <- c(celltypes.43p.cols, "cadetblue2")
 
 # B
 celltypes.43p.cols <- c(celltypes.43p.cols, "purple")
+
+# Mastocytes
+celltypes.43p.cols <- c(celltypes.43p.cols, "dodgerblue")
 
 
 # Name the pops
@@ -585,6 +596,10 @@ for(theGene in c("ZEB2", "CLEC4A", "IRF4", "IRF5")){
                        file.name = paste("various_plots/Monaco_targets/",theGene, ".stratified.myeloid_pops.pdf", sep = ""))
 }
 
+# TREM1/TREM2 dichotomy
+FeaturePlot(object = integrated.mye.seurat, features = c("TREM1", "TREM2"), pt.size = 2, order = T, blend = T)
+plot.cor(object = integrated.mye.seurat, features = c("TREM2", "PLIN2"), cor.feature = "TREM1", file.name = "various_plots/Monaco_targets/TREM cor.pdf")
+
 # Fix IRF5 'not found in assay'
 stratifyByExpression(object    = from_full.integrated.mye.seurat,
                      assay     = "integrated",
@@ -592,16 +607,25 @@ stratifyByExpression(object    = from_full.integrated.mye.seurat,
                      strat.by  = "IRF5",
                      file.name = paste("various_plots/Monaco_targets/",theGene, ".stratified.myeloid_pops.pdf", sep = ""))
                      
-           FeaturePlot(object = from_full.integrated.mye.seurat, features = "IRF5", )  
-           
-bunchOfCustomPlots(object = from_full.integrated.mye.seurat, features = c("ZEB2", "CLEC4A", "IRF4", "IRF5"), assay = "RNA", ncol = 2, group.by = "archetype", Vln.draw.names = T, name = "various_plots/Monaco_targets/Monaco_targets_archetype", Vln.color = archetype.colors )
-
-bunchOfCustomPlots(object = from_full.integrated.mye.seurat, features = c("ITGAX", "IRF5"), assay = "RNA", ncol = 2, group.by = "archetype", Vln.draw.names = T, name = "various_plots/Monaco_targets/Monaco_targets_ITGAX_archetype", Vln.color = archetype.colors )
-bunchOfCustomPlots(object = from_full.integrated.mye.seurat, features = c("ITGAX", "IRF5"), assay = "RNA", ncol = 2, Vln.draw.names = F, name = "various_plots/Monaco_targets/Monaco_targets_ITGAX", Vln.color = M.int_refined.pop.colors )
+bunchOfCustomPlots(object = from_full.integrated.mye.seurat, features = c("MKI67"), assay = "RNA", ncol = 2, Vln.draw.names = T, name = "various_plots/MKI67", Vln.color = archetype.colors )
 
 # Split on phenotype
 customVln(object = from_full.integrated.mye.seurat, features = c("ITGAX", "IRF5"), assay = "RNA", ncol = 2, splitPlot = T, split.by = "Phenotype", group.by = "archetype", draw.names = T, name = "various_plots/Monaco_targets/Monaco_targets_ITGAX_symp_split_archetype.pdf" )
 customVln(object = from_full.integrated.mye.seurat, features = c("ITGAX", "IRF5"), assay = "RNA", ncol = 2, splitPlot = T, split.by = "Phenotype", draw.names = F, name = "various_plots/Monaco_targets/Monaco_targets_ITGAX_symp_split.pdf", stack = T )
+
+## Do MKI67
+stratifyByExpression(object    = integrated.mye.seurat,
+                     assay     = "integrated",
+                     onlyUMAP  = T,
+                     strat.by  = "MKI67",
+                     file.name = paste("various_plots/","MKI67", ".stratified.myeloid_pops.pdf", sep = ""))
+
+FeaturePlot(object = from_full.integrated.mye.seurat, features = "IRF5", )  
+
+bunchOfCustomPlots(object = from_full.integrated.mye.seurat, features = c("ZEB2", "CLEC4A", "IRF4", "IRF5"), assay = "RNA", ncol = 2, group.by = "archetype", Vln.draw.names = T, name = "various_plots/Monaco_targets/Monaco_targets_archetype", Vln.color = archetype.colors )
+
+bunchOfCustomPlots(object = from_full.integrated.mye.seurat, features = "TREM1", assay = "RNA", name = "various_plots/Monaco_targets/TREM1", Vln.color = M.int_refined.pop.colors)
+bunchOfCustomPlots(object = integrated.mye.seurat, features = "TREM1", assay = "RNA", name = "various_plots/Monaco_targets/TREM1 macs only", Vln.color = M.int_refined.pop.colors)
 
 
 ## Fibrotic genes Annette
@@ -686,7 +710,7 @@ customDot(final.pop.call.integrated.mye.seurat, features = d.targets, group.by =
 DimPlot(full.43p.seurat, group.by = "celltypes.43p", cols = celltypes.43p.cols) + NoLegend()
 
 # Define some cell type markers
-celltype.markers <- c("CD3E", "CD8A", "CD4", "CD68", "CD1C", "NCAM1", "CD79A", "ACTA2", "CD34")
+celltype.markers <- c("CD3E", "CD8A", "CD4", "CD68", "CD1C", "NCAM1", "CD79A", "ACTA2", "CD34", "KIT")
 
 # And make some plots
 bunchOfCustomPlots(object          = full.43p.seurat, 
@@ -697,10 +721,10 @@ bunchOfCustomPlots(object          = full.43p.seurat,
                    feature.pt.size = 1.5,
                    name            = "various_plots/43p celltypes", 
                    assay           = "RNA", 
-                   Vln.width       = 13,
-                   Vln.height      = 10,
+                   Vln.width       = 10,
+                   Vln.height      = 15,
                    Vln.color       = celltypes.43p.cols,
-                   ncol            = 3,
+                   ncol            = 2,
                    Dot.width       = 10, 
                    Dot.height      = 5, 
                    dot.scale       = 15
@@ -726,4 +750,70 @@ ggsave(filename = "various_plots/43p celltypes - heatmap.pdf")
 # Random genes
 customVln(object = integrated.mye.seurat, features = "FABP4", splitPlot = F, assay = "RNA", name = "various_plots/FABP4.pdf")
 
+# ERVs
+bunchOfCustomPlots(object = final.pop.call.integrated.mye.seurat, 
+                   features = c("HERVK", "LTR2B" ,"LTR23" ,"LTR80A", "MLT1E3", "LTR103", "MLT1", "THE1C"), 
+                   group.by = "archetype",
+                   assay = "RNA",
+                   Vln.draw.names = T, 
+                   feature.pt.size = 2, 
+                   ncol = 2, 
+                   name = "various_plots/ERV genes")
+c("ERVK-6", "LTR2B" ,"LTR23" ,"LTR80A", "MLT1E3", "LTR103", "MLT1", "THE1C") %in% rownames(final.pop.call.integrated.mye.seurat)
+
+
+## Check expression of markers available for spatial
+# Load the markers
+spatial.abs <- scan(file = "../Spatial/ab_list.txt", what = "list")
+
+# Clean up the list
+spatial.abs <- unique(spatial.abs)
+
+# Update gene symbols
+spatial.abs                   <- AnnotationDbi::select(org.Hs.eg.db, keys = spatial.abs, keytype = "ALIAS", columns = "SYMBOL", multiVals = "first")
+spatial.abs.symbol            <- spatial.abs[!is.na(spatial.abs$SYMBOL),]
+row.names(spatial.abs.symbol) <- NULL
+
+# Write out unmatching entries to check by hand
+spatial.abs.handpick <- spatial.abs[is.na(spatial.abs$SYMBOL),"ALIAS"]
+write.table(file = "../Spatial/ab_list.no_symbol.txt", spatial.abs.handpick, quote = F, row.names = F, col.names = F)
+
+# Retrieve the curated list and merge it
+spatial.abs.handpick <- read.table(file = "../Spatial/ab_list.no_symbol.txt", header = F, col.names = c("ALIAS", "SYMBOL"))
+spatial.abs          <- rbind(spatial.abs.symbol, spatial.abs.handpick)
+
+# Fix FAP (wringly associated to CEL, the first hit in the ADbI query)
+spatial.abs[spatial.abs$SYMBOL == "CEL", "SYMBOL"] <- "FAP"
+
+# Keep overlap with the significant mac markers
+spatial.abs.markers <- final.pop.call.integrated.mye.seurat.markers %>% filter(gene %in% spatial.abs$SYMBOL) %>% filter(p_val_adj < 0.05) %>% filter(avg_log2FC > 1)
+
+# Add back ab aliases
+spatial.abs.markers <- merge(spatial.abs.markers, spatial.abs, by.x = "gene", by.y = "SYMBOL")
+
+# Keep only concatenated cluster info per gene
+spatial.abs.markers <- spatial.abs.markers %>% group_by(gene) %>% arrange(gene) %>% dplyr::summarise(across(everything(), ~paste0(na.omit(.x), collapse = "; "))) %>% select(all_of(c("gene", "ALIAS", "cluster")))
+
+# Plot the selection
+bunchOfCustomPlots(object         = final.pop.call.integrated.mye.seurat, 
+                   features       = spatial.abs.markers$gene, 
+                   Vln.draw.names = F, 
+                   Vln.width      = 25, 
+                   Vln.height     = 25, 
+                   name           = "../Spatial/Spatial ab selection", 
+                   ncol           = 4,
+                   Vln.color      = M.int_refined.pop.colors)
+
+bunchOfCustomPlots(object         = integrated.full.seurat, 
+                   features       = spatial.abs.markers$gene, 
+                   Vln.draw.names = F,
+                   Vln.width      = 30, 
+                   Vln.height     = 30, 
+                   name           = "../Spatial/Spatial ab selection all clusters", 
+                   ncol           = 4,
+                   Vln.color      = full_set.colors)
+customUMAP(integrated.full.seurat, legend.pos = "right", file.name = "../Spatial/UMAP for pop color reference.pdf", cols = full_set.colors, plot.width = 20)
+
+# Save to disk
+write.xlsx(spatial.abs.markers, file = "../Spatial/ab_list.pop_markers.xlsx")
 

@@ -1,7 +1,7 @@
-##========================================================================================================================
+#========================================================================================================================
 ## Correlation plot
 ##========================================================================================================================
-plot.cor <- function(object = final.pop.call.integrated.full.seurat, assay = "RNA", features = "GAPDH", cor.feature = "CLEC4A", group.by = "Patient", ncol = 2, file.name = "cor.plot.pdf", width = 10, height = 10){
+plot.cor <- function(object = final.pop.call.integrated.full.seurat, assay = "RNA", features = "GAPDH", cor.feature = "CLEC4A", group.by = "ident", ncol = 2, file.name = "cor.plot.pdf", width = 10, height = 10){
   # Get average expression for the requested features per group
   avg.expression.gene.set <- as.data.frame(AverageExpression(object   = object, 
                                                              assays   = assay, 
@@ -10,6 +10,7 @@ plot.cor <- function(object = final.pop.call.integrated.full.seurat, assay = "RN
 
   # Scale from 0 to 1
   avg.expression.gene.set <- as.data.frame(apply(avg.expression.gene.set, 1, rescale))
+  
   
   # Iterate over all comparisons with CLEC4A
   ggscatter(data           = avg.expression.gene.set,
@@ -84,7 +85,7 @@ concat.DGI.score_and_abundance <- function(x = intersected.pathways.foamy.ont.un
     x.abundance <- rbind(x.abundance, df)
   }
   x.abundance$Abundance <- as.numeric(x.abundance$Abundance)
-  x <- merge(x.score, x.abundance, by = "Gene")
+  x <- merge(x.score, x.abundance, by =                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                "Gene")
   return(x)
 }
 
@@ -490,7 +491,6 @@ stratifyByExpression <- function(object = all.seur.combined, assay = "RNA", stra
     ggsave(filename  = paste(file.name, " - violin.pdf"))
     
     customUMAP(object    = object, 
-               assay     = assay,
                group.by  = marker.col, 
                pt.size   = 4, 
                cols      = c("grey", "bisque", "coral", "firebrick"), 
@@ -501,7 +501,6 @@ stratifyByExpression <- function(object = all.seur.combined, assay = "RNA", stra
     if(!onlyUMAP){
       for(theGroup in names(gene.groups)){
         stratPlots(object   = object, 
-                   assay    = assay,
                    group.by = marker.col, 
                    features = gene.groups[[theGroup]], 
                    cols     = c("grey", "bisque", "coral", "firebrick"),
@@ -914,8 +913,8 @@ get_ontology <- function(res, name = "cluster", outdir = ".", return.data = F, f
   
   #Extract genes from res
   genes <- data.frame(Symbol = res[,"gene"])
-  
-  #Return emptyhanded if empty cluster
+
+    #Return emptyhanded if empty cluster
   if (nrow(genes)==0){
     return("NA")
   }
@@ -1102,4 +1101,198 @@ get_ontology <- function(res, name = "cluster", outdir = ".", return.data = F, f
   }
 } #get_ontology(res)
 
+get_ontology_DE <- function(res, name = "cluster", outdir = ".", return.data = F, full_GSEA = T, plot.top.n = 20, universe = all.seur.combined, volcano.plot = T){
+  #Set up our data
+  #Get background of all expressed genes in our dataset
+  universe <- row.names(universe)
+  universe <- AnnotationDbi::select(org.Hs.eg.db, keys = universe, columns = "ENTREZID", keytype = "SYMBOL", multiVals = "first")$ENTREZID
+  
+  #Extract genes from res
+  genes <- data.frame("Symbol" = row.names(res))
 
+  #Return emptyhanded if empty or too small cluster
+  if (nrow(genes)<5){
+    return("NA")
+  }
+
+  #Retrieve entrez IDs
+  genes <- AnnotationDbi::select(org.Hs.eg.db, keys = as.vector(genes$Symbol), columns = "ENTREZID", keytype = "SYMBOL", multiVals = "first")
+  genes <- genes[!duplicated(genes$SYMBOL),]
+  colnames(genes) <- c("symbol", "entrezID")
+  genes <- genes[,c(2,1)]
+
+    #Add logFC column
+  genes$logFC <- res[,"log2FoldChange"]
+  
+  #-------------------------------------------------------
+  #First run the custom collection and GO to make neat bar graphs
+  #CP & H
+  #Create annotation table
+  gs.annots <- buildCustomIdx(genes$entrezID,
+                              species = "human",
+                              gsets = ont_sets,
+                              label = "CP_and_H",
+                              name = "CP_and_H"
+  )
+  
+  #Get pathway enrichments
+  gsa.pathways <- egsea.ora(geneIDs = genes$entrezID,
+                            title = "x", 
+                            universe = universe,
+                            gs.annots = gs.annots,
+                            symbolsMap = genes,
+                            logFC = genes$logFC,
+                            sort.by = "p.adj",
+                            report.dir = ".",
+                            num.threads = 11,
+                            report = F
+  )
+  
+  #GO
+  #Create annotation table
+  gs.annots <- buildMSigDBIdx(entrezIDs = genes$entrezID, 
+                              species = "human", 
+                              geneSets = "c5"
+  )
+  
+  #Get GO enrichments
+  gsa.go <- egsea.ora(geneIDs = genes$entrezID,
+                      gs.annots = gs.annots,
+                      title = "x",
+                      universe = universe,
+                      symbolsMap = genes,
+                      logFC = genes$logFC,
+                      sort.by = "p.adj",
+                      report.dir = ".",
+                      num.threads = 11,
+                      report = F
+  )
+  
+  
+  #Extract top n enriched sets
+  if(length(gsa.pathways@results) > 0){
+    top.pathways <- data.frame(name      = row.names(topSets(gsa.pathways, number = plot.top.n, names.only = F)),
+                               padj      = topSets(gsa.pathways, number = plot.top.n, names.only = F)$p.adj,
+                               direction = topSets(gsa.pathways, number = plot.top.n, names.only = F)$direction)
+  }
+  
+  if(length(gsa.go@results) > 0){
+    top.GO       <- data.frame(name      = row.names(topSets(gsa.go, number = plot.top.n, names.only = F)), 
+                               padj      = topSets(gsa.go, number = plot.top.n, names.only = F)$p.adj,
+                               direction = topSets(gsa.go, number = plot.top.n, names.only = F)$direction)
+  }
+  
+  #Check if any sets are significant, otherwise return emptyhanded
+  if(exists("top.pathways") && exists("top.GO")){
+    if (!sum(unlist(lapply(c(top.pathways$padj, top.GO$padj), function(x) any(x<0.1))))){
+      cat("No significant sets found! Exiting...\n")
+      return("NA")
+    }
+  }else if(exists("top.GO")){
+    if (!sum(unlist(lapply(c(top.GO$padj), function(x) any(x<0.1))))){
+      cat("No significant sets found! Exiting...\n")
+      return("NA")
+    }
+  }else if(exists("top.pathways")){
+    if (!sum(unlist(lapply(c(top.pathways$padj), function(x) any(x<0.1))))){
+      cat("No significant sets found! Exiting...\n")
+      return("NA")
+    }
+  }
+  
+  #Plot!
+  if(exists("top.pathways")){
+    plot_GO_from_table(top.pathways, name = paste(outdir, "/", name, ".pathways.pdf", sep = ""))
+  }
+  if(exists("top.GO")){
+    plot_GO_from_table(top.GO,       name = paste(outdir, "/", name, ".GO_terms.pdf", sep = ""))
+  }
+  
+  #-------------------------------------------------------
+  #Now run the full GSEA suite and make a report dir, if wanted
+  if(full_GSEA){
+    #Build annotation index
+    gs.annots <- buildIdx(entrezIDs = genes$entrezID,
+                          species = "human",
+                          msigdb.gsets = "all",
+                          gsdb.gsets = "all",
+                          go.part = T,
+                          kegg.updated = T
+    )
+    
+    #Run EGSEA
+    egsea.ora(geneIDs = genes$entrezID,
+              title = name,
+              universe = universe,
+              gs.annots = gs.annots,
+              logFC = genes$logFC,
+              symbolsMap = genes,
+              display.top = 20,
+              sort.by = "p.adj",
+              report.dir = paste(outdir, "/", name, "_EGSEA", sep = ""),
+              kegg.dir = paste(outdir, "/", name, "_EGSEA/kegg-dir", sep = ""),
+              num.threads = 4,
+              interactive = F,
+              report = T,
+              verbose = F
+    )
+  }
+  
+  # Plot a volcano if wanted
+  if(volcano.plot){
+    if(length(gsa.pathways@results) > 0){
+      pathways <- data.frame(name          = row.names(topSets(gsa.pathways, number = 500, names.only = F)),
+                             padj          = topSets(gsa.pathways, number = 500, names.only = F)$p.adj,
+                             direction     = topSets(gsa.pathways, number = 500, names.only = F)$direction,
+                             avg.logfc.dir = topSets(gsa.pathways, number = 500, names.only = F)$avg.logfc.dir
+      )
+    }
+    
+    if(length(gsa.go@results) > 0){
+      goterms  <- data.frame(name          = row.names(topSets(gsa.go, number = 500, names.only = F)), 
+                             padj          = topSets(gsa.go, number = 500, names.only = F)$p.adj,
+                             direction     = topSets(gsa.go, number = 500, names.only = F)$direction,
+                             avg.logfc.dir = topSets(gsa.go, number = 500, names.only = F)$avg.logfc.dir)
+    }
+    
+    #Plot!
+    if(exists("pathways")){
+      plot_GO_volcano_from_table(pathways, name = paste(outdir, "/", name, ".pathway volcano.pdf", sep = ""))
+    }
+    if(exists("goterms")){
+      plot_GO_volcano_from_table(goterms,  name = paste(outdir, "/", name, ".GO_term volcano.pdf", sep = ""))
+    }
+  }
+  
+  
+  #Return the tables if wanted
+  if(return.data){
+    cat("Returning Data...\n")
+    if(length(gsa.pathways@results) > 0){
+      pathways <- data.frame(name          = row.names(topSets(gsa.pathways, number = 500, names.only = F)),
+                             padj          = topSets(gsa.pathways, number = 500, names.only = F)$p.adj,
+                             direction     = topSets(gsa.pathways, number = 500, names.only = F)$direction,
+                             avg.logfc.dir = topSets(gsa.pathways, number = 500, names.only = F)$avg.logfc.dir)
+    }
+    if(length(gsa.go@results) > 0){
+      goterms  <- data.frame(name          = row.names(topSets(gsa.go, number = 500, names.only = F)), 
+                             padj          = topSets(gsa.go, number = 500, names.only = F)$p.adj,
+                             direction     = topSets(gsa.go, number = 500, names.only = F)$direction,
+                             avg.logfc.dir = topSets(gsa.go, number = 500, names.only = F)$avg.logfc.dir)
+    }
+    
+    if(exists("pathways") && exists("goterms")){
+      returnList        <- list(pathways,goterms)
+      names(returnList) <- c("Pathways", "GO_terms")
+    }else if(exists("pathways")){
+      returnList        <- list(pathways)
+      names(returnList) <- c("Pathways")
+    }else if(exists("goterms")){
+      returnList        <- list(goterms)
+      names(returnList) <- c("GO_terms")
+    }else{
+      returnList <- "NA"
+    }
+    return(returnList)
+  }
+} #get_ontology(res)
