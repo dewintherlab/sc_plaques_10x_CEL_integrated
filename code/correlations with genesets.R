@@ -225,6 +225,16 @@ plot.cor(object      = final.pop.call.integrated.mye.seurat,
          height      = 20
 )
 
+# Do the id genes but correlate them with KDM5C
+plot.cor(object      = final.pop.call.from_full.integrated.mac.seurat, 
+         features    = refined.pop.id.genes,
+         cor.feature = "KDM5C", 
+         group.by    = "Patient", 
+         ncol        = 4, 
+         file.name   = "gene_set_correlations/macrophages.id_genes.KDM5C.pdf",
+         width       = 20, 
+         height      = 20
+)
 
 ## Let's check out the correlations with the mac archetypes
 # Set up archetypes

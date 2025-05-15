@@ -68,7 +68,8 @@ dir.create("Seurat_Objects", showWarnings = F)
 # saveRDS(final.pop.call.integrated.full.seurat, file = "Seurat_Objects/final.pop.call.integrated.full.seurat.Rds")
 # saveRDS(final.pop.call.integrated.mye.velocyto.seurat, "Seurat_Objects/final.pop.call.mye.velo_plaque.integrated.mapped.refined_populations.seurat.RDS")
 # saveRDS(final.pop.call.from_full.integrated.mye.velocyto.seurat, "Seurat_Objects/final.pop.call.mye.velo_pbmc_plaque.integrated.mapped.refined_populations.seurat.RDS")
-#
+# saveRDS(final.pop.call.from_full.integrated.mac.seurat, "Seurat_Objects/final.pop.call.from_full.integrated.mac.seurat.RDS")
+ 
 # ## Marker genes
 # # All markers from all patients and idents
 # saveRDS(all.patients.seurat.markers, "Seurat_Objects/main.patients.markers.RDS")
@@ -96,6 +97,7 @@ dir.create("Seurat_Objects", showWarnings = F)
 # ## Color Objects
 # saveRDS(full_set.colors,          file = "Seurat_Objects/full_set.colors.RDS")
 # saveRDS(M.int_refined.pop.colors, file = "Seurat_Objects/M.int_refined.pop.colors.RDS")
+# saveRDS(archetype.colors,          file = "Seurat_Objects/archetype.colors.RDS")
 #
 # ## Random odds and ends
 # saveRDS(vars.to.regress,       file = "Seurat_Objects/vars.to.regress.Rds")
@@ -166,8 +168,10 @@ full.43p.seurat <- readRDS(file = "Seurat_Objects/full_43p.idents_refiened.RDS")
 # Final population update
 final.pop.call.from_full.integrated.mye.seurat          <- readRDS(file = "Seurat_Objects/final.pop.call.from_full.integrated.mye.seurat.Rds")
 final.pop.call.from_full.integrated.mye.velocyto.seurat <- readRDS(file = "Seurat_Objects/final.pop.call.mye.velo_pbmc_plaque.integrated.mapped.refined_populations.seurat.RDS")
-final.pop.call.integrated.mye.velocyto.seurat           <- readRDS(file = "Seurat_Objects/mye.velo_plaque.integrated.mapped.refined_populations.seurat.RDS")
+final.pop.call.integrated.mye.velocyto.seurat           <- readRDS(file = "Seurat_Objects/final.pop.call.mye.velo_plaque.integrated.mapped.refined_populations.seurat.RDS")
 final.pop.call.integrated.full.seurat                   <- readRDS(file = "Seurat_Objects/final.pop.call.integrated.full.seurat.Rds")
+final.pop.call.from_full.integrated.mac.seurat          <- readRDS(file = "Seurat_Objects/final.pop.call.from_full.integrated.mac.seurat.RDS")
+final.pop.call.integrated.mac.seurat                    <- readRDS(file = "Seurat_Objects/final.pop.call.integrated.mac.seurat.RDS")
 
 
 ## Marker genes
@@ -198,3 +202,4 @@ exp.m.s.cpdb.relevant <- readRDS(file = "Seurat_Objects/cpdb_results.clean.RDS")
 ## Color Objects
 full_set.colors          <- readRDS(file = "Seurat_Objects/full_set.colors.RDS")
 M.int_refined.pop.colors <- readRDS(file = "Seurat_Objects/M.int_refined.pop.colors.RDS")
+archetype.colors         <- readRDS(file = "Seurat_Objects/archetype.colors.RDS")

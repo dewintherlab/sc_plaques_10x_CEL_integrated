@@ -253,6 +253,87 @@ show.velocity.on.embedding.cor(emb                = Embeddings(object    = mye.r
                                nPcs               = 30)
 dev.off()
 
+
+##================================================================================================================================
+## Run velocyto natively on myeloid populations PER PATIENTS for validation
+DefaultAssay(final.pop.call.from_full.integrated.mye.velocyto.seurat) <- "RNA"
+
+velo.per.pat <- list()
+for (thePatient in unique(final.pop.call.from_full.integrated.mye.velocyto.seurat$Patient)){
+  velo.per.pat[[thePatient]] <- subset(final.pop.call.from_full.integrated.mye.velocyto.seurat, subset = Patient == thePatient)
+}
+
+for (thePatient in c("P2", "P3")){
+  # Run velocyto scoring
+  velo.per.pat[[thePatient]] <- RunVelocity(object = velo.per.pat[[thePatient]], deltaT = 1, kCells = 25, fit.quantile = 0.02)
+  
+  # Visualise
+  ident.colors       <- M.int_refined.pop.colors
+ 
+  # Set colors
+  cell.colors <- as.vector(Idents(velo.per.pat[[thePatient]]))
+  names(cell.colors) <- names(Idents(velo.per.pat[[thePatient]]))
+  for(theIdent in unique(Idents(velo.per.pat[[thePatient]]))){
+    cell.colors[cell.colors == theIdent] <- ident.colors[theIdent]
+  }
+  
+  pdf(paste("velocyto_results/", thePatient, " mye.cells.velo_embeddings_n200-40.pdf", sep = ""),width = 15, height = 15)
+  show.velocity.on.embedding.cor(emb                = as.matrix(Embeddings(object    = velo.per.pat[[thePatient]], 
+                                                                 reduction = "umap")), 
+                                 vel                = Tool(object = velo.per.pat[[thePatient]], 
+                                                           slot = "RunVelocity"),
+                                 n                  = 200, 
+                                 scale              = "sqrt",
+                                 cell.colors        = ac(x     = cell.colors, alpha = 0.5), 
+                                 cex                = 2,
+                                 arrow.scale        = 2, 
+                                 show.grid.flow     = TRUE, 
+                                 min.grid.cell.mass = 0.5,
+                                 grid.n             = 40, 
+                                 arrow.lwd          = 2, 
+                                 do.par             = FALSE, 
+                                 cell.border.alpha  = 0.1,
+                                 n.cores            = 6,
+                                 nPcs               = 30)
+  dev.off()
+}
+
+# P1 has too little cells for the default settings
+for (thePatient in c("P1")){
+  # Run velocyto scoring
+  velo.per.pat[[thePatient]] <- RunVelocity(object = velo.per.pat[[thePatient]], deltaT = 1, kCells = 25, fit.quantile = 0.02, group.by = "archetypes")
+  
+  # Visualise
+  ident.colors       <- M.int_refined.pop.colors
+  
+  # Set colors
+  cell.colors <- as.vector(Idents(velo.per.pat[[thePatient]]))
+  names(cell.colors) <- names(Idents(velo.per.pat[[thePatient]]))
+  for(theIdent in unique(Idents(velo.per.pat[[thePatient]]))){
+    cell.colors[cell.colors == theIdent] <- ident.colors[theIdent]
+  }
+  
+  pdf(paste("velocyto_results/", thePatient, " mye.cells.velo_embeddings_n75-40.pdf", sep = ""),width = 15, height = 15)
+  show.velocity.on.embedding.cor(emb                = as.matrix(Embeddings(object    = velo.per.pat[[thePatient]], 
+                                                                           reduction = "umap")), 
+                                 vel                = Tool(object = velo.per.pat[[thePatient]], 
+                                                           slot = "RunVelocity"),
+                                 n                  = 75, 
+                                 scale              = "sqrt",
+                                 cell.colors        = ac(x     = cell.colors, alpha = 0.5), 
+                                 cex                = 2,
+                                 arrow.scale        = 2, 
+                                 show.grid.flow     = TRUE, 
+                                 min.grid.cell.mass = 0.5,
+                                 grid.n             = 40, 
+                                 arrow.lwd          = 2, 
+                                 do.par             = FALSE, 
+                                 cell.border.alpha  = 0.1,
+                                 n.cores            = 6,
+                                 nPcs               = 30)
+  dev.off()
+}
+
 ##================================================================================================================================
 ## Run velocyto natively on macrophage populations
 DefaultAssay(mac.refined.samples.velocyto.seurat) <- "spliced"

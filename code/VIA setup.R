@@ -16,9 +16,9 @@ final.pop.call.from_full.integrated.mye.velocyto.seurat <- AddMetaData(final.pop
 
 # Add archetypes
 archetypes <- as.vector(Idents(final.pop.call.from_full.integrated.mye.velocyto.seurat))
-archetypes[grep("Foamy", archetypes)]        <- "Foamy"
-archetypes[grep("Resident", archetypes)]     <- "Resident"
-archetypes[grep("Lipid", archetypes)]        <- "Resident"
+archetypes[grep("Foamy", archetypes)]        <- "iLAM"
+archetypes[grep("Lipid", archetypes)]        <- "LAM"
+archetypes[grep("Resident", archetypes)]     <- "Resident-like"
 archetypes[grep("Monocyte-derived", archetypes)] <- "Inflammatory"
 archetypes[grep("Monocytes", archetypes)]    <- "Monocytes"
 
@@ -65,9 +65,9 @@ final.pop.call.integrated.mye.velocyto.seurat <- AddMetaData(final.pop.call.inte
 
 # Add archetypes
 archetypes <- as.vector(Idents(final.pop.call.integrated.mye.velocyto.seurat))
-archetypes[grep("Foamy", archetypes)]        <- "Foamy"
-archetypes[grep("Resident", archetypes)]     <- "Resident"
-archetypes[grep("Lipid", archetypes)]        <- "Resident"
+archetypes[grep("Foamy", archetypes)]        <- "iLAM"
+archetypes[grep("Lipid", archetypes)]        <- "LAM"
+archetypes[grep("Resident", archetypes)]     <- "Resident-like"
 archetypes[grep("Monocyte-derived", archetypes)] <- "Inflammatory"
 
 final.pop.call.integrated.mye.velocyto.seurat <- AddMetaData(final.pop.call.integrated.mye.velocyto.seurat, metadata = archetypes, col.name = "archetypes")
@@ -78,7 +78,7 @@ i <- sapply(final.pop.call.integrated.mye.velocyto.seurat@meta.data, is.factor)
 final.pop.call.integrated.mye.velocyto.seurat@meta.data[i] <- lapply(final.pop.call.integrated.mye.velocyto.seurat@meta.data[i], as.character)
 
 # Check the UMAP
-DimPlot(final.pop.call.integrated.mye.velocyto.seurat, cols = archetype.colors, group.by = "archetypes") + NoLegend()
+DimPlot(final.pop.call.integrated.mye.velocyto.seurat, cols = archetype.colors, group.by = "archetypes", pt.size = 3) + NoLegend()
 
 ## Convert to h5seurat and then h5ad
 # Set default assay

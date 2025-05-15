@@ -47,7 +47,7 @@ dib.seurat <- RunPCA(dib.seurat)
 umap.mat <- as.matrix(meta[,c("UMAP_1", "UMAP_2")])
 row.names(umap.mat) <- meta$barcode
 dib.seurat[["umap"]] <- CreateDimReducObject(embeddings = umap.mat, assay = "RNA", key = "UMAP_")
-  
+ 
 # Plot the given populations
 customUMAP(object = dib.seurat, pt.size = 1.2, label = F, title = "Dib et al. data", shuffle = T, seed = 666, plot.width = 10, file.name = "Dib_integration/dib.UMAP.pdf")
 
@@ -55,32 +55,32 @@ customUMAP(object = dib.seurat, pt.size = 1.2, label = F, title = "Dib et al. da
 ## Transfer our labels by reference mapping
 # Find anchors
 DefaultAssay(dib.seurat) <- "RNA"
-dib.anchors <- FindTransferAnchors(reference           = from_full.integrated.mye.seurat,
+dib.anchors <- FindTransferAnchors(reference           = final.pop.call.from_full.integrated.mye.seurat,
                                    query               = dib.seurat,
                                    dims                = 1:30, 
                                    reference.reduction = "pca")
 
 # Predict labels
 predictions <- TransferData(anchorset = dib.anchors, 
-                            refdata   = Idents(from_full.integrated.mye.seurat),
+                            refdata   = Idents(final.pop.call.from_full.integrated.mye.seurat),
                             dims      = 1:30)
 
 # Add to the Dib seurat object
 dib.seurat <- AddMetaData(dib.seurat, metadata = predictions)
 
 # Map to ref UMAP
-from_full.integrated.mye.seurat <- RunUMAP(from_full.integrated.mye.seurat, dims = 1:30, reduction = "pca", return.model = TRUE)
+#final.pop.call.from_full.integrated.mye.seurat <- RunUMAP(final.pop.call.from_full.integrated.mye.seurat, dims = 1:30, reduction = "pca", return.model = TRUE)
 dib.seurat <- MapQuery(anchorset           = dib.anchors, 
-                       reference           = from_full.integrated.mye.seurat, 
+                       reference           = final.pop.call.from_full.integrated.mye.seurat, 
                        query               = dib.seurat,
-                       refdata             = Idents(from_full.integrated.mye.seurat), 
+                       refdata             = Idents(final.pop.call.from_full.integrated.mye.seurat), 
                        reference.reduction = "pca", 
                        reduction.model     = "umap")
 
 head(Idents(dib.seurat))
 
 # Visualize
-customUMAP(object = from_full.integrated.mye.seurat, pt.size = 1.2, label = F, title = "Mac & Mono UMAP", legend.pos = "right",
+customUMAP(object = final.pop.call.from_full.integrated.mye.seurat, pt.size = 1.2, label = F, title = "Mac & Mono UMAP", legend.pos = "right",
            shuffle = T, seed = 666, file.name = "Dib_integration/full_ref.UMAP.pdf", cols = full_set.colors, plot.width = 15)
 customUMAP(object = dib.seurat, group.by = "predicted.id", pt.size = 1.2, label = F, title = "Dib et al. ref mapped", legend.pos = "right",
            shuffle = T, seed = 666, file.name = "Dib_integration/dib.full_ref_map.UMAP.pdf", cols = full_set.colors, plot.width = 25)
@@ -178,31 +178,46 @@ customFeature(features   = c("S100A8", "IL10", "IL1B", "TREM1", "PLIN2", "TREM2"
 ## Transfer our labels by reference mapping
 # Find anchors
 DefaultAssay(dib.seurat) <- "RNA"
-DefaultAssay(integrated.mye.seurat) <- "integrated"
-dib.anchors <- FindTransferAnchors(reference           = integrated.mye.seurat,
+DefaultAssay(final.pop.call.integrated.mye.velocyto.seurat) <- "integrated"
+
+# Fix counts assay for integrated assay
+cm <- final.pop.call.integrated.mye.velocyto.seurat[["RNA"]]$counts
+ft <- row.names(final.pop.call.integrated.mye.velocyto.seurat)
+cm <- cm[row.names(cm) %in% ft,]
+final.pop.call.integrated.mye.velocyto.seurat[["integrated"]]$counts <- cm
+
+# Fix scale data
+final.pop.call.integrated.mye.velocyto.seurat <- ScaleData(final.pop.call.integrated.mye.velocyto.seurat)
+
+dib.anchors <- FindTransferAnchors(reference           = final.pop.call.integrated.mye.velocyto.seurat,
                                    query               = dib.seurat,
                                    dims                = 1:30, 
                                    reference.reduction = "pca")
 
 # Predict labels
 predictions <- TransferData(anchorset = dib.anchors, 
-                            refdata   = Idents(integrated.mye.seurat),
+                            refdata   = Idents(final.pop.call.integrated.mye.velocyto.seurat),
                             dims      = 1:30)
 
 # Add to the Dib seurat object
-dib.seurat <- AddMetaData(dib.seurat, metadata = predictions)
-
+mac.dib.seurat <- AddMetaData(dib.seurat, metadata = predictions)
 # Map to ref UMAP
-integrated.mye.seurat <- RunUMAP(integrated.mye.seurat, dims = 1:30, reduction = "pca", return.model = TRUE)
-dib.seurat <- MapQuery(anchorset           = dib.anchors, 
-                       reference           = integrated.mye.seurat, 
-                       query               = dib.seurat,
-                       refdata             = Idents(integrated.mye.seurat), 
-                       reference.reduction = "pca", 
-                       reduction.model     = "umap")
+#final.pop.call.integrated.mye.velocyto.seurat <- RunUMAP(final.pop.call.integrated.mye.velocyto.seurat, dims = 1:30, reduction = "pca", return.model = TRUE)
+#final.pop.call.integrated.mye.velocyto.seurat <- UpdateSeuratObject(final.pop.call.integrated.mye.velocyto.seurat)
+mac.dib.seurat <- MapQuery(anchorset           = dib.anchors, 
+                           reference           = final.pop.call.integrated.mye.velocyto.seurat, 
+                           query               = mac.dib.seurat,
+                           refdata             = Idents(final.pop.call.integrated.mye.velocyto.seurat),
+                           reference.reduction = "pca", 
+                           reduction.model     = "umap")
+
+DefaultAssay(mac.dib.seurat) <- "RNA"
+
+DimPlot(mac.dib.seurat, group.by = "predicted.id", reduction = "ref.umap", cols = full_set.colors) + NoLegend()
+DimPlot(final.pop.call.integrated.mye.velocyto.seurat) + NoLegend()
 
 # Visualize
-customUMAP(object = integrated.mye.seurat, pt.size = 1.2, label = F, title = "Mac UMAP", legend.pos = "right",
+customUMAP(object = final.pop.call.integrated.mye.velocyto.seurat, pt.size = 1.2, label = F, title = "Mac UMAP", legend.pos = "right",
            shuffle = T, seed = 666, file.name = "Dib_integration/mac_ref.UMAP.pdf", cols = full_set.colors, plot.width = 15)
 customUMAP(object = dib.seurat, pt.size = 1.2, label = F, title = "Dib et al. ref mapped", legend.pos = "right",
            shuffle = T, seed = 666, file.name = "Dib_integration/dib.mac_ref_map.dib_idents.UMAP.pdf",  plot.width = 15)
@@ -264,31 +279,31 @@ customUMAP(object = mac.dib.seurat, pt.size = 1.2, label = F, title = "Dib et al
 ## Transfer our labels by reference mapping
 # Find anchors
 DefaultAssay(mac.dib.seurat) <- "RNA"
-DefaultAssay(integrated.mye.seurat) <- "integrated"
-dib.anchors <- FindTransferAnchors(reference           = integrated.mye.seurat,
+DefaultAssay(final.pop.call.integrated.mye.velocyto.seurat) <- "integrated"
+dib.anchors <- FindTransferAnchors(reference           = final.pop.call.integrated.mye.velocyto.seurat,
                                    query               = mac.dib.seurat,
                                    dims                = 1:30, 
                                    reference.reduction = "pca")
 
 # Predict labels
 predictions <- TransferData(anchorset = dib.anchors, 
-                            refdata   = Idents(integrated.mye.seurat),
+                            refdata   = Idents(final.pop.call.integrated.mye.velocyto.seurat),
                             dims      = 1:30)
 
 # Add to the Dib seurat object
 mac.dib.seurat <- AddMetaData(mac.dib.seurat, metadata = predictions)
 
 # Map to ref UMAP
-integrated.mye.seurat  <- RunUMAP(integrated.mye.seurat, dims = 1:30, reduction = "pca", return.model = TRUE)
+final.pop.call.integrated.mye.velocyto.seurat  <- RunUMAP(final.pop.call.integrated.mye.velocyto.seurat, dims = 1:30, reduction = "pca", return.model = TRUE)
         mac.dib.seurat <- MapQuery(anchorset       = dib.anchors, 
-                               reference           = integrated.mye.seurat, 
+                               reference           = final.pop.call.integrated.mye.velocyto.seurat, 
                                query               = mac.dib.seurat,
-                               refdata             = Idents(integrated.mye.seurat), 
+                               refdata             = Idents(final.pop.call.integrated.mye.velocyto.seurat), 
                                reference.reduction = "pca", 
                                reduction.model     = "umap")
 
 # Visualize
-customUMAP(object = integrated.mye.seurat, pt.size = 1.2, label = F, title = "Mac UMAP", legend.pos = "right",
+customUMAP(object = final.pop.call.integrated.mye.velocyto.seurat, pt.size = 1.2, label = F, title = "Mac UMAP", legend.pos = "right",
            shuffle = T, seed = 666, file.name = "Dib_integration/mac_only_dib.mac_ref.UMAP.pdf", cols = full_set.colors, plot.width = 15)
 customUMAP(object = mac.dib.seurat, pt.size = 1.2, label = F, title = "Dib et al. ref mapped", legend.pos = "right",
            shuffle = T, seed = 666, file.name = "Dib_integration/mac_only_dib.dib.mac_ref_map.dib_idents.UMAP.pdf",  plot.width = 15)
@@ -427,9 +442,9 @@ Idents(mac.dib.seurat) <- mac.dib.seurat$dib.idents
 # Find anchors
 DefaultAssay(mac.dib.seurat) <- "RNA"
 mac.dib.seurat <- FindVariableFeatures(mac.dib.seurat)
-DefaultAssay(integrated.mye.seurat) <- "integrated"
+DefaultAssay(final.pop.call.integrated.mye.velocyto.seurat) <- "integrated"
 mac.anchors <- FindTransferAnchors(reference           = mac.dib.seurat,
-                                   query               = integrated.mye.seurat,
+                                   query               = final.pop.call.integrated.mye.velocyto.seurat,
                                    dims                = 1:30, 
                                    reference.reduction = "pca")
 
@@ -439,25 +454,25 @@ predictions <- TransferData(anchorset = mac.anchors,
                             dims      = 1:30)
 
 # Add to the seurat object
-integrated.mye.seurat <- AddMetaData(integrated.mye.seurat, metadata = predictions)
+final.pop.call.integrated.mye.velocyto.seurat <- AddMetaData(final.pop.call.integrated.mye.velocyto.seurat, metadata = predictions)
 
 # Map to ref UMAP
 mac.dib.seurat <- RunUMAP(mac.dib.seurat, dims = 1:30, reduction = "pca", return.model = TRUE)
-integrated.mye.seurat <- MapQuery(anchorset           = mac.anchors, 
+final.pop.call.integrated.mye.velocyto.seurat <- MapQuery(anchorset           = mac.anchors, 
                        reference           = mac.dib.seurat, 
-                       query               = integrated.mye.seurat,
+                       query               = final.pop.call.integrated.mye.velocyto.seurat,
                        refdata             = Idents(mac.dib.seurat), 
                        reference.reduction = "pca", 
                        reduction.model     = "umap")
 
 # Visualize
-customUMAP(object = integrated.mye.seurat, group.by = "predicted.id", pt.size = 1.5, label = F, title = "Dib idents", legend.pos = "right",
+customUMAP(object = final.pop.call.integrated.mye.velocyto.seurat, group.by = "predicted.id", pt.size = 1.5, label = F, title = "Dib idents", legend.pos = "right",
            shuffle = T, seed = 666, file.name = "Dib_integration/mac.dib_ref_map.UMAP.dib_idents.pdf", plot.width = 10)
 
 customVln(features   = c("TREM2", "PLTP", "PLIN2", "OLR1",  "IL1B",  "CD14", 
                          "CD9",   "MRC1",  "TREM1", "ABCA1", "TNF",   "FCGR1A",
                          "GPNMB", "FOLR2", "HSPA6", "ABCG1", "CASP1", "FCGR3A"), 
-                   object     = integrated.mye.seurat, 
+                   object     = final.pop.call.integrated.mye.velocyto.seurat, 
                    group.by   = "predicted.id",
                    ncol       = 6,
                    name       = "Dib_integration/mac.dib_Ref LAM - resident - foam - foam - inflammatory - general markers Violin.pdf",
@@ -469,7 +484,7 @@ customVln(features   = c("TREM2", "PLTP", "PLIN2", "OLR1",  "IL1B",  "CD14",
 customFeature(features   = c("TREM2", "PLTP", "PLIN2", "OLR1",  "IL1B",  "CD14", 
                              "CD9",   "MRC1",  "TREM1", "ABCA1", "TNF",   "FCGR1A",
                              "GPNMB", "FOLR2", "HSPA6", "ABCG1", "CASP1", "FCGR3A"), 
-          object     = integrated.mye.seurat, 
+          object     = final.pop.call.integrated.mye.velocyto.seurat, 
           ncol       = 6,
           pt.size    = 1.1,
           name       = "Dib_integration/mac.dib_Ref LAM - resident - foam - foam - inflammatory - general markers Feature.pdf",
@@ -480,7 +495,7 @@ customFeature(features   = c("TREM2", "PLTP", "PLIN2", "OLR1",  "IL1B",  "CD14",
 customVln(features   = c("TREM2", "PLTP", "PLIN2", "OLR1",  "IL1B",  "CD14", 
                          "CD9",   "MRC1",  "TREM1", "ABCA1", "TNF",   "FCGR1A",
                          "GPNMB", "FOLR2", "HSPA6", "ABCG1", "CASP1", "FCGR3A"), 
-          object     = integrated.mye.seurat, 
+          object     = final.pop.call.integrated.mye.velocyto.seurat, 
           ncol       = 6,
           cols       = M.int_refined.pop.colors,
           name       = "Dib_integration/mac_Ref LAM - resident - foam - foam - inflammatory - general markers Violin.pdf",
@@ -492,7 +507,7 @@ customVln(features   = c("TREM2", "PLTP", "PLIN2", "OLR1",  "IL1B",  "CD14",
 customFeature(features   = c("TREM2", "PLTP", "PLIN2", "OLR1",  "IL1B",  "CD14", 
                              "CD9",   "MRC1",  "TREM1", "ABCA1", "TNF",   "FCGR1A",
                              "GPNMB", "FOLR2", "HSPA6", "ABCG1", "CASP1", "FCGR3A"), 
-          object     = integrated.mye.seurat, 
+          object     = final.pop.call.integrated.mye.velocyto.seurat, 
           ncol       = 6,
           pt.size    = 1.1,
           name       = "Dib_integration/mac_Ref LAM - resident - foam - foam - inflammatory - general markers Feature.pdf",
@@ -501,7 +516,7 @@ customFeature(features   = c("TREM2", "PLTP", "PLIN2", "OLR1",  "IL1B",  "CD14",
 )
 
 customVln(features   = c("S100A8", "IL10", "IL1B", "TREM1", "PLIN2", "TREM2", "CD9", "HMOX1", "FOLR2", "C1QA", "HLA-DRB5", "CD1C", "LAMP3", "CLEC9A", "SIGLEC6"), 
-          object     = integrated.mye.seurat, 
+          object     = final.pop.call.integrated.mye.velocyto.seurat, 
           group.by   = "predicted.id",
           ncol       = 5,
           name       = "Dib_integration/mac.dib_Ref Dib markers Violin.pdf",
@@ -511,7 +526,7 @@ customVln(features   = c("S100A8", "IL10", "IL1B", "TREM1", "PLIN2", "TREM2", "C
 )
 
 customFeature(features   = c("S100A8", "IL10", "IL1B", "TREM1", "PLIN2", "TREM2", "CD9", "HMOX1", "FOLR2", "C1QA", "HLA-DRB5", "CD1C", "LAMP3", "CLEC9A", "SIGLEC6"), 
-          object     = integrated.mye.seurat, 
+          object     = final.pop.call.integrated.mye.velocyto.seurat, 
           ncol       = 5, 
           pt.size    = 1.1,
           name       = "Dib_integration/mac.dib_Ref Dib markers Feature.pdf",
@@ -520,7 +535,7 @@ customFeature(features   = c("S100A8", "IL10", "IL1B", "TREM1", "PLIN2", "TREM2"
 )
 
 customVln(features   = c("TREM1", "PLIN2", "IL1B", "TNF", "HSPA6", "CASP1"), 
-          object     = integrated.mye.seurat, 
+          object     = final.pop.call.integrated.mye.velocyto.seurat, 
           group.by   = "predicted.id",
           ncol       = 2,
           name       = "Dib_integration/pdata dlabels foam dif markers Violin.pdf",
@@ -530,7 +545,7 @@ customVln(features   = c("TREM1", "PLIN2", "IL1B", "TNF", "HSPA6", "CASP1"),
 )
 
 customVln(features   = c("PLTP", "C1QA", "FOLR2", "GPNMB", "TREM2", "CD9", "IL1B", "TNF"), 
-          object     = integrated.mye.seurat, 
+          object     = final.pop.call.integrated.mye.velocyto.seurat, 
           group.by   = "predicted.id",
           ncol       = 2,
           name       = "Dib_integration/pdata dlabels res dif markers Violin.pdf",
@@ -540,7 +555,7 @@ customVln(features   = c("PLTP", "C1QA", "FOLR2", "GPNMB", "TREM2", "CD9", "IL1B
 )
 
 customVln(features   = c("S100A8", "SELL", "FCGR3A", "MX1"), 
-          object     = integrated.mye.seurat, 
+          object     = final.pop.call.integrated.mye.velocyto.seurat, 
           group.by   = "predicted.id",
           ncol       = 2,
           name       = "Dib_integration/pdata dlabels inf dif markers Violin.pdf",
@@ -551,7 +566,7 @@ customVln(features   = c("S100A8", "SELL", "FCGR3A", "MX1"),
 
 
 customVln(features   = c("TREM1", "PLIN2", "IL1B", "TNF", "HSPA6", "CASP1"), 
-          object     = integrated.mye.seurat, 
+          object     = final.pop.call.integrated.mye.velocyto.seurat, 
           cols       = M.int_refined.pop.colors,
           ncol       = 2,
           name       = "Dib_integration/pdata plabels foam dif markers Violin.pdf",
@@ -561,7 +576,7 @@ customVln(features   = c("TREM1", "PLIN2", "IL1B", "TNF", "HSPA6", "CASP1"),
 )
 
 customVln(features   = c("PLTP", "C1QA", "FOLR2", "GPNMB", "TREM2", "CD9", "IL1B", "TNF"), 
-          object     = integrated.mye.seurat, 
+          object     = final.pop.call.integrated.mye.velocyto.seurat, 
           cols       = M.int_refined.pop.colors,
           ncol       = 2,
           name       = "Dib_integration/pdata plabels res dif markers Violin.pdf",
@@ -571,7 +586,7 @@ customVln(features   = c("PLTP", "C1QA", "FOLR2", "GPNMB", "TREM2", "CD9", "IL1B
 )
 
 customVln(features   = c("S100A8", "SELL", "FCGR3A", "MX1"), 
-          object     = integrated.mye.seurat, 
+          object     = final.pop.call.integrated.mye.velocyto.seurat, 
           cols       = M.int_refined.pop.colors,
           ncol       = 2,
           name       = "Dib_integration/pdata plabels inf dif markers Violin.pdf",
@@ -707,9 +722,9 @@ for(i in levels(Idents(trem1.dib.seurat))){
 }
 
 ## Check how our foam cells look if we subset them out
-unique(Idents(integrated.mye.seurat))
-foam.idents               <- unique(Idents(integrated.mye.seurat))[c(3,5,10)]
-foam.integrated.my.seurat <- subset(integrated.mye.seurat, idents = foam.idents)
+unique(Idents(final.pop.call.integrated.mye.velocyto.seurat))
+foam.idents               <- unique(Idents(final.pop.call.integrated.mye.velocyto.seurat))[c(3,5,10)]
+foam.integrated.my.seurat <- subset(final.pop.call.integrated.mye.velocyto.seurat, idents = foam.idents)
 foam.integrated.my.seurat
 
 ## Recluster

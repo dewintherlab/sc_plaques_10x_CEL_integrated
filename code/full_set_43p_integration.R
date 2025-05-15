@@ -396,7 +396,36 @@ full_set.colors     <- c(M.int_refined.pop.colors, other.colors)
 ## Visualize
 customUMAP(object = integrated.full.seurat, legend.pos = "right", cols = full_set.colors, plot.width = 20, pt.size = 1, file.name =  "full_43p_celseq_integration/Second round of clustering/Refined mye pops cleaned UMAP.pdf")
 
+## Draw a more 'top level' view
+toplevelidents <- as.vector(Idents(integrated.full.seurat))
+unique(toplevelidents)
+toplevelidents[grep("B Cell",      toplevelidents)] <- "B Cells"
+toplevelidents[grep("T Cells",     toplevelidents)] <- "T Cells"
+toplevelidents[grep("NK Cells",    toplevelidents)] <- "NK Cells"
+toplevelidents[grep("cDC",         toplevelidents)] <- "Dendritic Cells"
+toplevelidents[grep("Macrophage",  toplevelidents)] <- "Macrophages"
+toplevelidents[grep("Monocytes",   toplevelidents)] <- "Monocytes"
+toplevelidents[grep("Endothelial", toplevelidents)] <- "Endothelial Cells"
+toplevelidents[grep("Smooth",      toplevelidents)] <- "Smooth Muscle Cells"
+toplevelidents[grep("Mast",        toplevelidents)] <- "Mast Cells"
+toplevelidents[grep("Erythroid",   toplevelidents)] <- "Erythroid Cells"
+unique(toplevelidents)
+
+# Add to the seurat object
+integrated.full.seurat <- AddMetaData(integrated.full.seurat, metadata = toplevelidents, col.name = "top.level.idents")
+
+# Set colors
+full_set.top.colors <- c("B Cells" = "yellow3", "Dendritic Cells" = "turquoise4", "Endothelial Cells" = "orange3", "Erythroid Cells" = "red2", "Macrophages" = "skyblue", "Mast Cells" = "purple4", "NK Cells" = "chartreuse4", "Smooth Muscle Cells" = "brown4", "T Cells" = "pink3", "Monocytes" = "blue")
+
+# Plot total UMAP
+customUMAP(object = integrated.full.seurat, legend.pos = "right", group.by = "top.level.idents", cols = full_set.top.colors, plot.width = 10, pt.size = 1, file.name =  "full_43p_celseq_integration/Second round of clustering/Top level Idents full UMAP.pdf")
+
+# Plot plaque cell UMAP
+
 
 ## Save the integrated seurat object
 saveRDS(integrated.full.seurat, "Seurat_Objects/full.43p_10X.integrated.cleaned.seurat.RDS")
 #integrated.full.seurat <- readRDS(file = "Seurat_Objects/full.43p_10X.integrated.cleaned.seurat.RDS")
+
+
+

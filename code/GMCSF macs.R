@@ -170,8 +170,8 @@ gmcsf.high.genes <- gmcsf.high.genes[row.names(gmcsf.high.macs),]
 geneSets <- list("MCSF" = mcsf.high.genes, "GMCSF" = gmcsf.high.genes)
 
 # Retrieve the expression matrix from the seurat object
-exprMat <- GetAssayData(final.pop.call.integrated.mye.seurat, "counts")
-DimPlot(final.pop.call.integrated.mye.seurat) + theme(legend.position = "none")
+exprMat <- GetAssayData(final.pop.call.integrated.mye.velocyto.seurat, "counts")
+DimPlot(final.pop.call.integrated.mye.velocyto.seurat) + theme(legend.position = "none")
 mcsf.high.genes %in% row.names(exprMat)
 
 # Calculate enrichment scores
@@ -312,7 +312,7 @@ pointLabel(ump$layout, labels = rownames(ump$layout), method="SANN", cex=0.6)
 plotSA(fit2, main="Mean variance trend, GSE99056")
 
 ## Extract sig genes
-dT <- decideTests(fit2, adjust.method="fdr", p.value=0.01, lfc=4)
+dT <- decideTests(fit2, adjust.method="fdr", p.value=0.01, lfc=2)
 
 mcsf.up  <- row.names(dT@.Data)[dT@.Data == 1]
 gmcsf.up <- row.names(dT@.Data)[dT@.Data == -1]
@@ -320,18 +320,22 @@ gmcsf.up <- row.names(dT@.Data)[dT@.Data == -1]
 mcsf.up.genes  <- select(x = hgug4112a.db, keys = mcsf.up,  columns = "SYMBOL", keytype = "PROBEID")$SYMBOL
 gmcsf.up.genes <- select(x = hgug4112a.db, keys = gmcsf.up, columns = "SYMBOL", keytype = "PROBEID")$SYMBOL
 
+mcsf.up.genes  <- mcsf.up.genes[ !is.na(mcsf.up.genes)]
+gmcsf.up.genes <- gmcsf.up.genes[!is.na(gmcsf.up.genes)]
+
 ##==================================================
 ## Check for enrichment in the single cell data
 # Make genesets for use with AUCell
 geneSets <- list("MCSF" = mcsf.up.genes, "GMCSF" = gmcsf.up.genes)
 
+
 # Retrieve the expression matrix from the seurat object
-exprMat <- GetAssayData(final.pop.call.integrated.mye.seurat, "counts")
-DimPlot(final.pop.call.integrated.mye.seurat) + theme(legend.position = "none")
+exprMat <- GetAssayData(final.pop.call.integrated.mye.velocyto.seurat, assay = "RNA", layer = "counts")
+DimPlot(final.pop.call.integrated.mye.velocyto.seurat) + theme(legend.position = "none")
 mcsf.up.genes %in% row.names(exprMat)
 
 # Calculate enrichment scores
-cells_AUC <- AUCell_run(exprMat, geneSets, BiocParallel::MulticoreParam(5))
+cells_AUC <- AUCell_run(exprMat, geneSets, BiocParallel::MulticoreParam(5), aucMaxRank = 20)
 
 # Optimize tresholds
 set.seed(333)
@@ -349,13 +353,14 @@ length(cells_assignment$MCSF$assignment)
 length(cells_assignment$GMCSF$assignment)
 
 # Add to seurat metadata
-act.sig <- data.frame(row.names = colnames(final.pop.call.integrated.mye.seurat), "act.sig" = rep("none", length(colnames(final.pop.call.integrated.mye.seurat))))
+act.sig <- data.frame(row.names = colnames(final.pop.call.integrated.mye.velocyto.seurat), "act.sig" = rep("none", length(colnames(final.pop.call.integrated.mye.velocyto.seurat))))
 act.sig[cells_assignment$MCSF$assignment,  "act.sig"] <- "M-CSF"
 act.sig[cells_assignment$GMCSF$assignment, "act.sig"] <- "GM-CSF"
 
-final.pop.call.integrated.mye.seurat <- AddMetaData(final.pop.call.integrated.mye.seurat, metadata = act.sig, col.name = "act.sig")
-DimPlot(final.pop.call.integrated.mye.seurat, group.by = "act.sig")
-customUMAP(object = final.pop.call.integrated.mye.seurat, group.by = "act.sig", pt.size = 2, shuffle = T, legend.pos = "top", seed = 666, file.name = "csfmac/umap.pdf", cols = c("M-CSF" = "dodgerblue", "GM-CSF" = "goldenrod", "none" = "grey"))
+archetype.integrated.mye.velocyto.seurat <- AddMetaData(archetype.integrated.mye.velocyto.seurat, metadata = act.sig, col.name = "act.sig")
+DimPlot(archetype.integrated.mye.velocyto.seurat, group.by = "act.sig")
+customUMAP(object = archetype.integrated.mye.velocyto.seurat, group.by = "act.sig",   pt.size = 3, shuffle = T, legend.pos = "top", seed = 666, file.name = "csfmac/umap.pdf", cols = c("M-CSF" = "dodgerblue", "GM-CSF" = "orangered", "none" = "grey"))
+customUMAP(object = archetype.integrated.mye.velocyto.seurat, pt.size = 3, shuffle = T, legend.pos = "top", seed = 666, file.name = "csfmac/umap archatypes.pdf", cols = archetype.colors)
 
 
 ## Construct signatures using GSE135491 data of human monocyte derived macrophages after LPS stimulation.

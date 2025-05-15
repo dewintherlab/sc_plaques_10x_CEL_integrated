@@ -390,6 +390,25 @@ customVln(features  = fib.genes,
           name      = "final_mac_pops/fibrotic markers.pdf", 
           width     = 23, height = 7, draw.names = F, cols = M.int_refined.pop.colors, stack = F)
 
+
+# Plot MKI67
+bunchOfCustomPlots(features  = "MKI67",
+                   object    = final.pop.call.integrated.mye.seurat,
+                   Vln.draw.names = T, 
+                   name = "final_mac_pops/MKI67", 
+                   Vln.pt.size = 1, 
+                   dot.scale = 15, 
+                   feature.pt.size = 3, 
+                   Vln.color = M.int_refined.pop.colors)
+
+# SELL
+customVln(features  = "SELL", 
+          object    = final.pop.call.integrated.mye.seurat,
+          ncol      = 4,
+          name      = "final_mac_pops/SELL.pdf", 
+          draw.names = F, cols = M.int_refined.pop.colors, stack = F, height = 5)
+
+
 ## subset id genes and some extra markers based on Monaco's remarks
 bunchOfCustomPlots(object          = final.pop.call.integrated.mye.seurat, 
                    features        = c(unique(refined.pop.id.genes), "HMOX1", "IL10", "C1QA"),
@@ -481,6 +500,8 @@ for(theType in names(mace.sub.markers)){
                      name            = paste("final_mac_pops/MACE.", theType, ".markers.all_celltypes", sep = ""))
 }
 
+
+customVln(final.pop.call.from_full.integrated.mac.seurat, group.by = "archetype", features = c("FOLR2", "MRC1", "LYVE1", "TIMD4"), draw.names = F, ncol = 2, name = "archetypes/Tis Res markers.pdf", cols = archetype.colors)
 
 ## Run monocle analysis
 ## Import the seurat object
@@ -777,7 +798,7 @@ dev.off()
 ## Check archetype markers
 ## Set up archetypes
 archetypes <- as.vector(Idents(final.pop.call.integrated.mye.velocyto.seurat))
-archetypes[grep("Foamy", archetypes)]        <- "Foamy"
+archetypes[grep("Foamy", archetypes)]        <- "iLAM"
 archetypes[grep("Lipid", archetypes)]        <- "LAM"
 archetypes[grep("Resident", archetypes)]     <- "Resident-like"
 archetypes[grep("Monocyte-derived", archetypes)] <- "Inflammatory"
@@ -789,7 +810,7 @@ levels(as.factor(archetypes))
 final.pop.call.integrated.mye.velocyto.seurat <- AddMetaData(final.pop.call.integrated.mye.velocyto.seurat,metadata = archetypes, col.name = "archetype")
 
 # Set up colors
-archetype.colors <- c("Resident-like" = "#528347", "Inflammatory" = "#87482F", "Foamy" = "#9476A3", "Monocytes" = "#6495ED", "LAM" = "#7FFF00")
+archetype.colors <- c("Resident-like" = "#528347", "Inflammatory" = "#87482F", "iLAM" = "#9476A3", "Monocytes" = "#6495ED", "LAM" = "#7FFF00")
 
 ## Set up archetypes as default idents in a new object
 archetype.integrated.mye.velocyto.seurat         <- AddMetaData(final.pop.call.integrated.mye.velocyto.seurat, metadata = Idents(final.pop.call.integrated.mye.velocyto.seurat), col.name = "final.pop.idents")
@@ -835,10 +856,16 @@ saveRDS(archetype.colors, file = "archetypes/Macrophage archetype colors.Rds")
 
 ## Make some extra plots
 # Heatmap
+DefaultAssay(archetype.integrated.mye.velocyto.seurat) <- "RNA"
 top.markers <- archetype.markers %>% group_by(cluster) %>% top_n(15, avg_log2FC)
+as.vector(unlist(top.markers[top.markers$cluster == "Resident-like","gene"]))[as.vector(unlist(top.markers[top.markers$cluster == "Resident-like","gene"])) %in% as.vector(unlist(top.markers[top.markers$cluster == "LAM","gene"]))]
 top.markers <- as.vector(unlist(top.markers[,"gene"]))
 DoHeatmap(archetype.integrated.mye.velocyto.seurat, group.colors = archetype.colors, label = F, features = top.markers, raster = F)
+VlnPlot(archetype.integrated.mye.velocyto.seurat, features = "APOE")
+
 ggsave("archetypes/heatmap.pdf")
+
+customDot(object = archetype.integrated.mye.velocyto.seurat, features = unique(top.markers), name = "archetypes/dotplot.pdf", dot.scale = 15, width = 20, height = 5)
 
 # Selected markers
 selected.markers <- c("PLTP", "MRC1", 
@@ -857,6 +884,372 @@ customVln(features  = selected.markers,
                    name      = "archetypes/refined markers.pdf",
                    col = archetype.colors, draw.names = F,
                    width = 13, height = 20)
+
+# MIBI markers
+customVln(features  = c("S100A8", "AIF1", "MRC1", "HIF1A", "CA9"), 
+          object    = archetype.integrated.mye.velocyto.seurat,
+          ncol      = 2,
+          name      = "archetypes/IBI markers.pdf",
+          col = archetype.colors, draw.names = F,
+          width = 10, height = 10)
+
+
+# Mono migration
+bunchOfCustomPlots(features  = c("ALOX5", "ITGA4"), 
+          object    = final.pop.call.from_full.integrated.mye.velocyto.seurat, group.by = "archetypes",
+          ncol      = 2,
+          name      = "archetypes/mono mig markers",Vln.draw.names = F, dot.scale = 15, Vln.width = 10, Vln.height = 5, Vln.color = archetype.colors,feature.pt.size = 2)
+
+
+## Dotplot in the full (plaque) object to gauge specificity
+
+top.markers <- unique(c("TREM2","CD9","C3","MMP9","APOE", "CD81" ,"TREM2", "MMP9", "C1QC", "CD9", "APOC1", "C1QA", "C1QB", "GPNMB", "MSR1", "GSN", "FABP5", "LGMN", "LMNA", "FN1",
+                "FCGR3A", "MX1", "S100A8", "IL1B", "FCN1", "FGL2", "JAML", "CFP", "CORO1A", "IFITM2","MNDA", "LIMD2", "TNFSF10", "RIPOR2", "S100A8", "PLAC8", "LY6E", "IFITM1", "S100A12", 
+                  "PLIN2", "TREM1", "HSPA6", "OLR1", "ABCG1", "C15orf48", "VEGFA", "PLIN2", "TREM1", "CLEC5A", "ANPEP", "HIF1A−AS3", "ERO1A", "HK2", "SLC2A3", "FBP1", "DDIT4", "SPP1", "OLR1", "NDRG1",
+                "MRC1", "CCL18",  "SELENOP", "PLTP", "SLC40A1", "C1QA", "CCL18", "LILRB5", "FOLR2", "LGMN", "F13A1", "DAB2", "FUCA", "MAF", "FRMD4B" ))
+# Subset
+final.pop.call.integrated.plaque.seurat <- subset(final.pop.call.integrated.full.seurat, subset = Tissue == "plaque")
+DimPlot(final.pop.call.integrated.plaque.seurat)
+
+## Set up archetypes
+archetypes <- as.vector(Idents(final.pop.call.integrated.plaque.seurat))
+unique(archetypes)
+archetypes[grep("B Cell",      archetypes)] <- "B Cells"
+archetypes[grep("T Cells",     archetypes)] <- "T Cells"
+archetypes[grep("NK Cells",    archetypes)] <- "NK Cells"
+archetypes[grep("cDC",         archetypes)] <- "Dendritic Cells"
+archetypes[grep("Macrophage",  archetypes)] <- "Macrophages"
+archetypes[grep("Endothelial", archetypes)] <- "Endothelial Cells"
+archetypes[grep("Smooth",      archetypes)] <- "Smooth Muscle Cells"
+archetypes[grep("Mast",        archetypes)] <- "Mast Cells"
+archetypes[grep("Erythroid",   archetypes)] <- "Erythroid Cells"
+unique(archetypes)
+
+# Add to the seurat object
+final.pop.call.integrated.plaque.seurat <- AddMetaData(final.pop.call.integrated.plaque.seurat,metadata = archetypes, col.name = "archetype")
+final.pop.call.integrated.plaque.seurat$archetype <- factor(final.pop.call.integrated.plaque.seurat$archetype, levels = c("B Cells", "T Cells", "NK Cells", "Dendritic Cells", "Macrophages", "Endothelial Cells", "Smooth Muscle Cells", "Mast Cells", "Erythroid Cells" ))
+DimPlot(final.pop.call.integrated.plaque.seurat, group.by = "archetype")
+
+# Re calculate UMAP
+final.pop.call.integrated.plaque.seurat <- RunUMAP(final.pop.call.integrated.plaque.seurat, dims = 1:30)
+DimPlot(final.pop.call.integrated.plaque.seurat, group.by = "archetype")
+
+## Plot plaque only UMAPs
+# Archetypes
+# QC: Patients
+customUMAP(object = final.pop.call.integrated.plaque.seurat, legend.pos = "right", group.by = "Patient", plot.width = 10, pt.size = 0.5, file.name =  "archetypes/Patient UMAP.pdf")
+# QC: Method
+customUMAP(object = final.pop.call.integrated.plaque.seurat, legend.pos = "right", group.by = "Method", plot.width = 10, pt.size = 0.5, file.name =  "archetypes/Method UMAP.pdf")
+
+# Plot markers
+customDot(final.pop.call.integrated.plaque.seurat, group.by = "archetype", cluster.idents = T, features = unique(top.markers), width = 20, name = "archetypes/marker specificity dotplot.pdf", dot.scale = 15)
+
+## Make heatmap of the full thing
+## Get markers per archetype
+final.pop.call.integrated.plaque.archetypes.seurat <- final.pop.call.integrated.plaque.seurat
+Idents(final.pop.call.integrated.plaque.archetypes.seurat) <- archetypes
+DefaultAssay(final.pop.call.integrated.plaque.archetypes.seurat) <- "RNA"
+final.pop.call.integrated.plaque.archetypes.seurat <- ScaleData(final.pop.call.integrated.plaque.archetypes.seurat)
+
+integrated.full.seurat.plaque.markers <- FindAllMarkers(final.pop.call.integrated.plaque.archetypes.seurat, assay = "RNA", only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25)
+
+# Save the top15 markers per cluster
+sep.markers <- integrated.full.seurat.plaque.markers %>% group_by(cluster) %>% top_n(15, avg_log2FC)
+
+# Top level heatmap
+DoHeatmap(object = final.pop.call.integrated.plaque.archetypes.seurat, features = sep.markers$gene, group.colors = full_set.top.colors, raster = T, label = F) + theme(legend.text = element_text(size = 12), text = element_text(face = "bold"), legend.title = element_blank())
+ggsave("archetypes/Top Level Heatmap.png", width = 10, height = 20, limitsize = F)
+
+# Top level UMAP
+customUMAP(object = final.pop.call.integrated.plaque.seurat, legend.pos = "right", group.by = "archetype", cols = full_set.top.colors, plot.width = 10, pt.size = 0.5, file.name =  "archetypes/Top level Idents plaque UMAP.pdf")
+
+# Plot relative contributions of patients to each cluster
+# Plot relative distribution
+m             <- as.data.frame(table(final.pop.call.integrated.plaque.seurat@meta.data[,c("Patient","archetype")]))
+colnames(m)   <- c("Patient", "Cell type", "Count")
+m             <- m[order(m$Count, decreasing = T),]
+m$`Cell type` <- factor(m$`Cell type`)
+m$Patient     <- factor(m$Patient)
+head(m)
+
+# Pick random colors from a spectrum so we don't end up with a rainbow. (Because a rainbow of 49 colors makes it very difficult to distinguish adjacent patients' colors)
+pat.cols <- sample(x = colorSpacer(startcolor = "darkred", middlecolors = c("orange","chartreuse", "dodgerblue", "blue4"), endcolor = "violet", steps = 256, return.colors = T), size = 49)
+
+# And plot the bars
+ggplot(m, aes(x = `Cell type`, y = Count, fill = Patient)) + 
+  geom_bar(position="fill", stat="identity") +
+  scale_fill_manual(values = pat.cols, ) +
+  coord_flip() +
+  theme_pubr()
+ggsave("archetypes/Top level patient abundance.pdf")
+
+## Scaled relative distribution
+# Get total contribution
+pat.tot           <- as.data.frame(table(final.pop.call.integrated.plaque.seurat$Patient))
+colnames(pat.tot) <- c("Patient", "Count")
+pat.tot           <- pat.tot[order(pat.tot$Count, decreasing = T),]
+
+# Get scaling factor
+pat.scale <- 1
+for (thePat in 2:nrow(pat.tot)){
+  pat.scale <- c(pat.scale, (pat.tot[1,"Count"] / pat.tot[thePat, "Count"]))
+}
+pat.tot$Scale <- pat.scale
+
+# Get abundances
+m             <- as.data.frame(table(final.pop.call.integrated.plaque.seurat@meta.data[,c("Patient","archetype")]))
+colnames(m)   <- c("Patient", "Cell type", "Count")
+m             <- m[order(m$Count, decreasing = T),]
+m$`Cell type` <- factor(m$`Cell type`)
+m$Patient     <- factor(m$Patient)
+head(m)
+
+# Apply scaling factor
+for(thePatient in unique(m$Patient)){
+ m[which(m$Patient == thePatient),"Norm_count"] <- m[which(m$Patient == thePatient),"Count"] * pat.tot[which(pat.tot$Patient == thePatient),"Scale"]
+}
+head(m)
+
+# And plot the bars
+ggplot(m, aes(x = `Cell type`, y = Norm_count, fill = Patient)) + 
+  geom_bar(position="fill", stat="identity") +
+  scale_fill_manual(values = pat.cols, ) +
+  coord_flip() +
+  theme_pubr()
+ggsave("archetypes/Top level patient relative abundance.pdf")
+
+## Plot numbers of patients contributing to each population
+# Retreive the info
+pats.per.pop <- data.frame("Patients" = integer())
+for(theIdent in unique(m$`Cell type`)){
+  pats.per.pop[theIdent, "Patients"] <- sum(m[m$`Cell type` == theIdent,"Count"] > 0)
+}
+pats.per.pop$Perc <- pats.per.pop$Patients / length(unique(m$Patient)) * 100
+pats.per.pop$CellType <- row.names(pats.per.pop)
+pats.per.pop <- pats.per.pop[order(pats.per.pop$Perc, decreasing = T),]
+pats.per.pop$CellType <- factor(pats.per.pop$CellType, levels = pats.per.pop$CellType)
+
+# And plot the bars
+ggplot(pats.per.pop, aes(x = CellType, y = Perc, fill = CellType)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  scale_fill_manual(values = full_set.top.colors) +
+  xlab("Population") +
+  ylab("% of Patients") +
+  ggtitle("Patient contribution to populations") +
+  theme_pubclean(base_size = 16) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        legend.position = "right",
+        aspect.ratio = 2)
+
+ggsave("archetypes/Top level patient contributions.pdf")
+
+# Plot relative contributions of patients to each macrophage subcluster
+# Plot relative distribution
+DimPlot(final.pop.call.from_full.integrated.mac.seurat, cols = M.int_refined.pop.colors ) + NoLegend()
+final.pop.call.from_full.integrated.mac.seurat <- AddMetaData(final.pop.call.from_full.integrated.mac.seurat, Idents(final.pop.call.from_full.integrated.mac.seurat), col.name = "mac.pops")
+m             <- as.data.frame(table(final.pop.call.from_full.integrated.mac.seurat@meta.data[,c("Patient","mac.pops")]))
+colnames(m)   <- c("Patient", "Cell type", "Count")
+m             <- m[order(m$Count, decreasing = T),]
+m$`Cell type` <- factor(m$`Cell type`)
+m$Patient     <- factor(m$Patient)
+head(m)
+
+# Pick random colors from a spectrum so we don't end up with a rainbow. (Because a rainbow of 49 colors makes it very difficult to distinguish adjacent patients' colors)
+pat.cols <- sample(x = colorSpacer(startcolor = "darkred", middlecolors = c("orange","chartreuse", "dodgerblue", "blue4"), endcolor = "violet", steps = 256, return.colors = T), size = 49)
+
+# And plot the bars
+ggplot(m, aes(x = `Cell type`, y = Count, fill = Patient)) + 
+  geom_bar(position="fill", stat="identity") +
+  scale_fill_manual(values = pat.cols, ) +
+  coord_flip() +
+  theme_pubr() + theme(aspect.ratio = 0.25)
+ggsave("archetypes/Mac level patient abundance.pdf", width = 20)
+
+## Scaled relative distribution
+# Get total contribution
+pat.tot           <- as.data.frame(table(final.pop.call.from_full.integrated.mac.seurat$Patient))
+colnames(pat.tot) <- c("Patient", "Count")
+pat.tot           <- pat.tot[order(pat.tot$Count, decreasing = T),]
+
+# Get scaling factor
+pat.scale <- 1
+for (thePat in 2:nrow(pat.tot)){
+  pat.scale <- c(pat.scale, (pat.tot[1,"Count"] / pat.tot[thePat, "Count"]))
+}
+pat.tot$Scale <- pat.scale
+
+# Get abundances
+m             <- as.data.frame(table(final.pop.call.from_full.integrated.mac.seurat@meta.data[,c("Patient","mac.pops")]))
+colnames(m)   <- c("Patient", "Cell type", "Count")
+m             <- m[order(m$Count, decreasing = T),]
+m$`Cell type` <- factor(m$`Cell type`)
+m$Patient     <- factor(m$Patient)
+head(m)
+
+# Apply scaling factor
+for(thePatient in unique(m$Patient)){
+  m[which(m$Patient == thePatient),"Norm_count"] <- m[which(m$Patient == thePatient),"Count"] * pat.tot[which(pat.tot$Patient == thePatient),"Scale"]
+}
+head(m)
+
+# And plot the bars
+ggplot(m, aes(x = `Cell type`, y = Norm_count, fill = Patient)) + 
+  geom_bar(position="fill", stat="identity") +
+  scale_fill_manual(values = pat.cols, ) +
+  coord_flip() +
+  theme_pubr() + theme(aspect.ratio = 0.25)
+ggsave("archetypes/Mac level patient relative abundance.pdf", width = 20)
+
+## Plot numbers of patients contributing to each population
+# Retreive the info
+pats.per.pop <- data.frame("Patients" = integer())
+for(theIdent in unique(m$`Cell type`)){
+  pats.per.pop[theIdent, "Patients"] <- sum(m[m$`Cell type` == theIdent,"Count"] > 0)
+}
+pats.per.pop$Perc <- pats.per.pop$Patients / length(unique(m$Patient)) * 100
+pats.per.pop$CellType <- row.names(pats.per.pop)
+pats.per.pop <- pats.per.pop[order(pats.per.pop$Perc, decreasing = T),]
+pats.per.pop$CellType <- factor(pats.per.pop$CellType, levels = pats.per.pop$CellType)
+
+# And plot the bars
+ggplot(pats.per.pop, aes(x = CellType, y = Perc, fill = CellType)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  scale_fill_manual(values = M.int_refined.pop.colors) +
+  xlab("Population") +
+  ylab("% of Patients") +
+  ggtitle("Patient contribution to populations") +
+  theme_pubclean(base_size = 16) +
+  theme(axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        aspect.ratio = 2) + NoLegend()
+
+ggsave("archetypes/Mac level patient contributions.pdf")
+
+
+# Plot relative contributions of patients to each macrophage archetype
+# Set the archetypes
+final.pop.call.from_full.integrated.mac.seurat <- AddMetaData(final.pop.call.from_full.integrated.mac.seurat, metadata = Idents(final.pop.call.from_full.integrated.mac.seurat), col.name = "sub.pops")
+final.pop.call.from_full.integrated.mac.seurat <- RenameIdents(final.pop.call.from_full.integrated.mac.seurat, "CD14+-IL1B+SELL+CD16+ Migrating Inflammatory Monocyte-derived Macrophages" = "Inflammatory", 
+                                                     "CD14+IL1B+SELL+MX1+ Interferon Activated Inflammatory Monocyte-derived Macrophages" = "Inflammatory", 
+                                                     "CD14+IL1B+SELL+S100A8+ Migrating Inflammatory Monocyte-derived Macrophages" = "Inflammatory", 
+                                                     "CD14+TREM2-TIMP1+HSPA6+ Lipid-stress Activated Foamy Macrophages" = "iLAM", 
+                                                     "CD14+TREM2-OLR1+NLRP3+ Inflammatory Foamy Macrophages" = "iLAM", 
+                                                     "CD14+TREM2-OLR1+ABCA+ Foamy Macrophages" = "iLAM",
+                                                     "CD14+TNF+TREM2+FOLR2+ Inflammatory Resident-like Lipid Associated Macrophages" = "LAM",
+                                                     "CD14+IL1B-TREM2-FOLR2+ Resident-like Macrophages" = "Resident-like",
+                                                     "CD14+TREM2+FOLR2-ABCG+ Lipid Associated Macrophages" = "LAM")
+final.pop.call.from_full.integrated.mac.seurat <- AddMetaData(final.pop.call.from_full.integrated.mac.seurat, metadata = Idents(final.pop.call.from_full.integrated.mac.seurat), col.name = "archetype")
+Idents(final.pop.call.from_full.integrated.mac.seurat) <- final.pop.call.from_full.integrated.mac.seurat$sub.pops
+DimPlot(final.pop.call.from_full.integrated.mac.seurat, cols = archetype.colors, group.by = "archetype" ) + NoLegend()
+
+# Plot relative distribution
+m             <- as.data.frame(table(final.pop.call.from_full.integrated.mac.seurat@meta.data[,c("Patient","archetype")]))
+colnames(m)   <- c("Patient", "Cell type", "Count")
+m             <- m[order(m$Count, decreasing = T),]
+m$`Cell type` <- factor(m$`Cell type`)
+m$Patient     <- factor(m$Patient)
+head(m)
+
+# Pick random colors from a spectrum so we don't end up with a rainbow. (Because a rainbow of 49 colors makes it very difficult to distinguish adjacent patients' colors)
+pat.cols <- sample(x = colorSpacer(startcolor = "darkred", middlecolors = c("orange","chartreuse", "dodgerblue", "blue4"), endcolor = "violet", steps = 256, return.colors = T), size = 49)
+
+# And plot the bars
+ggplot(m, aes(x = `Cell type`, y = Count, fill = Patient)) + 
+  geom_bar(position="fill", stat="identity") +
+  scale_fill_manual(values = pat.cols, ) +
+  coord_flip() +
+  theme_pubr() + theme(aspect.ratio = 0.25)
+ggsave("archetypes/Mac arch level patient abundance.pdf", width = 20)
+
+## Scaled relative distribution
+# Get total contribution
+pat.tot           <- as.data.frame(table(final.pop.call.from_full.integrated.mac.seurat$Patient))
+colnames(pat.tot) <- c("Patient", "Count")
+pat.tot           <- pat.tot[order(pat.tot$Count, decreasing = T),]
+
+# Get scaling factor
+pat.scale <- 1
+for (thePat in 2:nrow(pat.tot)){
+  pat.scale <- c(pat.scale, (pat.tot[1,"Count"] / pat.tot[thePat, "Count"]))
+}
+pat.tot$Scale <- pat.scale
+
+# Get abundances
+m             <- as.data.frame(table(final.pop.call.from_full.integrated.mac.seurat@meta.data[,c("Patient","archetype")]))
+colnames(m)   <- c("Patient", "Cell type", "Count")
+m             <- m[order(m$Count, decreasing = T),]
+m$`Cell type` <- factor(m$`Cell type`)
+m$Patient     <- factor(m$Patient)
+head(m)
+
+# Apply scaling factor
+for(thePatient in unique(m$Patient)){
+  m[which(m$Patient == thePatient),"Norm_count"] <- m[which(m$Patient == thePatient),"Count"] * pat.tot[which(pat.tot$Patient == thePatient),"Scale"]
+}
+head(m)
+
+# And plot the bars
+ggplot(m, aes(x = `Cell type`, y = Norm_count, fill = Patient)) + 
+  geom_bar(position="fill", stat="identity") +
+  scale_fill_manual(values = pat.cols, ) +
+  coord_flip() +
+  theme_pubr() + theme(aspect.ratio = 0.25)
+ggsave("archetypes/Mac arch level patient relative abundance.pdf", width = 20)
+
+## Plot numbers of patients contributing to each population
+# Retreive the info
+pats.per.pop <- data.frame("Patients" = integer())
+for(theIdent in unique(m$`Cell type`)){
+  pats.per.pop[theIdent, "Patients"] <- sum(m[m$`Cell type` == theIdent,"Count"] > 0)
+}
+pats.per.pop$Perc <- pats.per.pop$Patients / length(unique(m$Patient)) * 100
+pats.per.pop$CellType <- row.names(pats.per.pop)
+pats.per.pop <- pats.per.pop[order(pats.per.pop$Perc, decreasing = T),]
+pats.per.pop$CellType <- factor(pats.per.pop$CellType, levels = pats.per.pop$CellType)
+
+# And plot the bars
+ggplot(pats.per.pop, aes(x = CellType, y = Perc, fill = CellType)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  scale_fill_manual(values = archetype.colors) +
+  xlab("Population") +
+  ylab("% of Patients") +
+  ylim(c(0,100)) +
+  ggtitle("Patient contribution to populations") +
+  theme_pubclean(base_size = 16) +
+  theme(axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        aspect.ratio = 2) + NoLegend()
+
+ggsave("archetypes/Mac arch level patient contributions.pdf")
+
+
+## Check severity correlation with iLam / no iLAM patietns
+iLAM.presence <- m[m$`Cell type` == "iLAM", c("Patient", "Count", "Norm_count")]
+iLAM.presence$iLAMs <- "Yes"
+iLAM.presence[iLAM.presence$Count == 0,"iLAMs"] <- "No"
+colnames(iLAM.presence) <- c("Patient", "Cell Count", "Cell Count (Lib size norm)", "iLAMs Present")
+
+write.table(iLAM.presence, file = "integraton_benchmarking/patients_iLAMs.tsv", quote = F,sep = "\t", row.names = F)
+
+
+
+## Hand picked Mac specific markers (from the above dotplot)
+mac.spec.markers <- c("TREM2", "C3", "MMP9","C1QC","APOC1","C1QA","C1QB","MSR1", 
+"FCG3A","S100A8","FCN1","IL1B","S100A12", "FGL2", "JAML","CFP",
+"PLIN2", "TREM1","HSPA6","OLR1","VEGFA", "CLEC5A", "ERO1A","SPP1",
+"MRC1","CCL18","SELENOP","LILRB5","FOLR2","F13A1", "MAF", "SLCO2B1")
+
+# And plot
+VlnPlot(final.pop.call.integrated.plaque.seurat, group.by = "archetype", features = mac.spec.markers,pt.size = 0, stack = T)
+
+## Top level markers (handpicked)
+top.level.markers <- c("CD79A", "CD3E", "NCAM1", "CD1C","CD68", "CD34", "ACTA2", "KIT", "HBB")
+
+# Violin
+customVln(final.pop.call.integrated.plaque.seurat, group.by = "archetype", features = top.level.markers, cols = full_set.top.colors, name = "archetypes/Top level markers violin.pdf", ncol = 3, draw.names = F, height = 10, width = 15)
+
+# 
+
 
 ## Get ontologies
 # Top 5
@@ -1050,3 +1443,335 @@ for (theGene in key.genes){
 }
 
 
+## Construct some default macrophage objects
+## Subsetted from the full set
+# Remove monos
+final.pop.call.from_full.integrated.mac.seurat <- subset(final.pop.call.from_full.integrated.mye.seurat, idents = as.vector(unique(Idents(final.pop.call.from_full.integrated.mye.seurat))[grep("Monocytes", unique(Idents(final.pop.call.from_full.integrated.mye.seurat)))]), invert = T)
+
+# fix ident order for plotting
+idents <- Idents(final.pop.call.from_full.integrated.mac.seurat)
+idents <- factor(idents, levels = levels(idents)[c(1,3,2,7,8,9,4,5,6)])
+Idents(final.pop.call.from_full.integrated.mac.seurat) <- idents
+VlnPlot(final.pop.call.from_full.integrated.mac.seurat, features = c("CCL18", "MRC1", "PLTP", "FOLR2", "CD9", "TREM2", "MAF", "C1QB", "TNF"), cols = full_set.colors, pt.size = 0, ncol = 3) * theme(axis.text.x = element_blank(), axis.title.x = element_blank(), axis.ticks.x = element_blank())
+
+# Add archetypes
+final.pop.call.from_full.integrated.mac.seurat <- AddMetaData(final.pop.call.from_full.integrated.mac.seurat, metadata = Idents(final.pop.call.from_full.integrated.mac.seurat), col.name = "sub.pops")
+unique(Idents(final.pop.call.from_full.integrated.mac.seurat))
+final.pop.call.from_full.integrated.mac.seurat <- RenameIdents(final.pop.call.from_full.integrated.mac.seurat, 
+                                                     "CD14+TREM2+FOLR2-ABCG+ Lipid Associated Macrophages" = "LAM",
+                                                     "CD14+IL1B+SELL+S100A8+ Migrating Inflammatory Monocyte-derived Macrophages" = "Inflammatory",
+                                                     "CD14+TREM2-TIMP1+HSPA6+ Lipid-stress Activated Foamy Macrophages" = "iLAM",
+                                                     "CD14+TREM2-OLR1+NLRP3+ Inflammatory Foamy Macrophages" = "iLAM",
+                                                     "CD14+IL1B-TREM2-FOLR2+ Resident-like Macrophages" = "Resident-like",
+                                                     "CD14+IL1B+SELL+MX1+ Interferon Activated Inflammatory Monocyte-derived Macrophages" = "Inflammatory",
+                                                     "CD14+-IL1B+SELL+CD16+ Migrating Inflammatory Monocyte-derived Macrophages" = "Inflammatory",
+                                                     "CD14+TNF+TREM2+FOLR2+ Inflammatory Resident-like Lipid Associated Macrophages" = "LAM",
+                                                     "CD14+TREM2-OLR1+ABCA+ Foamy Macrophages" = "iLAM")
+final.pop.call.from_full.integrated.mac.seurat <- AddMetaData(final.pop.call.from_full.integrated.mac.seurat, metadata = Idents(final.pop.call.from_full.integrated.mac.seurat), col.name = "archetype")
+Idents(final.pop.call.from_full.integrated.mac.seurat) <- final.pop.call.from_full.integrated.mac.seurat$sub.pops
+
+# Save the object
+saveRDS(final.pop.call.from_full.integrated.mac.seurat, "Seurat_Objects/final.pop.call.from_full.integrated.mac.seurat.RDS")
+
+## From the myeloid object
+final.pop.call.integrated.mac.seurat <- integrated.mye.seurat
+Idents(final.pop.call.integrated.mac.seurat) <- Idents(final.pop.call.from_full.integrated.mac.seurat)
+VlnPlot(final.pop.call.integrated.mac.seurat, features = c("IL1B", "FCN1", "FCGR3A", "MX1", "S100A8", "C1QB", "PLTP", "FOLR2", "MRC1", "TREM2", "PLIN2", "TREM1", "HSPA6", "ABCG1", "OLR1", "CCL18", "MMP9", "CD9", "C3"), cols = M.int_refined.pop.colors, pt.size = 0, ncol = 3) * theme(axis.text.x = element_blank(), axis.title.x = element_blank(), axis.ticks.x = element_blank())
+
+# Add archetypes
+final.pop.call.integrated.mac.seurat <- AddMetaData(final.pop.call.integrated.mac.seurat, metadata = Idents(final.pop.call.integrated.mac.seurat), col.name = "sub.pops")
+unique(Idents(final.pop.call.integrated.mac.seurat))
+final.pop.call.integrated.mac.seurat <- RenameIdents(final.pop.call.integrated.mac.seurat, 
+                                                     "CD14+TREM2+FOLR2-ABCG+ Lipid Associated Macrophages" = "LAM",
+                                                     "CD14+IL1B+SELL+S100A8+ Migrating Inflammatory Monocyte-derived Macrophages" = "Inflammatory",
+                                                     "CD14+TREM2-TIMP1+HSPA6+ Lipid-stress Activated Foamy Macrophages" = "iLAM",
+                                                     "CD14+TREM2-OLR1+NLRP3+ Inflammatory Foamy Macrophages" = "iLAM",
+                                                     "CD14+IL1B-TREM2-FOLR2+ Resident-like Macrophages" = "Resident-like",
+                                                     "CD14+IL1B+SELL+MX1+ Interferon Activated Inflammatory Monocyte-derived Macrophages" = "Inflammatory",
+                                                     "CD14+-IL1B+SELL+CD16+ Migrating Inflammatory Monocyte-derived Macrophages" = "Inflammatory",
+                                                     "CD14+TNF+TREM2+FOLR2+ Inflammatory Resident-like Lipid Associated Macrophages" = "LAM",
+                                                     "CD14+TREM2-OLR1+ABCA+ Foamy Macrophages" = "iLAM")
+final.pop.call.integrated.mac.seurat <- AddMetaData(final.pop.call.integrated.mac.seurat, metadata = Idents(final.pop.call.integrated.mac.seurat), col.name = "archetype")
+Idents(final.pop.call.integrated.mac.seurat) <- final.pop.call.integrated.mac.seurat$sub.pops
+
+# Save the object
+saveRDS(final.pop.call.integrated.mac.seurat, "Seurat_Objects/final.pop.call.integrated.mac.seurat.RDS")
+
+
+## Plot some more markers
+#Tweak 5: son of tweak (USe c1qb instead a sit is cleaner)
+refined.pop.id.genes <-c("IL1B", "FCN1", "FCGR3A", "MX1", "S100A8", "C1QB", "PLTP", "FOLR2", "MRC1", "TREM2", "PLIN2", "TREM1", "HSPA6", "ABCG1", "OLR1", "CCL18", "MMP9", "CD9", "C3")
+customVln(features  = refined.pop.id.genes,
+          object    = final.pop.call.from_full.integrated.mac.seurat,
+          ncol      = 3,
+          name      = "final_mac_pops/Curated population ID genes - refined - violin take 5.pdf", 
+          width     = 20, height = 20, draw.names = F, cols = M.int_refined.pop.colors, stack = F)
+
+customVln(features  = c("PLTP", "MAF", "FOLR2", "C1QA"),
+          object    = final.pop.call.from_full.integrated.mac.seurat,
+          ncol      = 2,
+          name      = "final_mac_pops/Res gens.pdf", 
+          width     = 20, height = 20, draw.names = F, cols = M.int_refined.pop.colors, stack = F)
+
+
+## Plot TFs from network analysis
+DefaultAssay(final.pop.call.integrated.mye.velocyto.seurat) <- "RNA"
+
+tfs <- c("MTA2","IRF1", "HIF1A", "EGR1", "EPAS1", "PRRX1", "SALL1", "MSX2",  "ZIC2", "NR1H4")
+customFeature(features = tfs, 
+              object = final.pop.call.from_full.integrated.mac.seurat, 
+              ncol = 2, pt.size = 3, cols = c("grey","red"),
+              width = 10,
+              height = 20,
+              name = "final_mac_pops/TFs in the macs.pdf")
+
+## Save markers from 10X libraries
+final.pop.call.integrated.mye.velocyto.markers <- FindAllMarkers(final.pop.call.integrated.mye.velocyto.seurat, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25)
+
+xlsx::write.xlsx2(as.data.frame(final.pop.call.integrated.mye.velocyto.markers), file = "final_mac_pops/Macrophage marker genes.xlsx", sheetName = "Populations", col.names = T, row.names = F, append = F)
+xlsx::write.xlsx2(as.data.frame(archetype.markers), file = "final_mac_pops/Macrophage marker genes.xlsx", sheetName = "Archetypes", col.names = T, row.names = F, append = T)
+
+
+## Check KDM5C in the macs
+DefaultAssay(final.pop.call.integrated.mac.seurat) <- "RNA"
+customVln(features  = c("KDM5C"),
+          object    = final.pop.call.integrated.mac.seurat,
+          ncol      = 2,
+          name      = "final_mac_pops/KDM5C - violinplot.pdf", 
+          width     = 10, height = 20, draw.names = T, pt.size = 1, cols = M.int_refined.pop.colors, stack = F)
+
+customVln(features  = c("KDM5C"),
+          object    = final.pop.call.integrated.mac.seurat,
+          ncol      = 2, 
+          split.by = "Sex", splitPlot = T,
+          name      = "final_mac_pops/KDM5C - sex split - violinplot.pdf", 
+          width     = 15, height = 20, draw.names = T, pt.size = 1, cols = M.int_refined.pop.colors, stack = F)
+
+VlnPlot(object = final.pop.call.integrated.mac.seurat, features = "KDM5C", split.by = "Sex", split.plot = T)
+
+customVln(features  = c("KDM5C"),
+          object    = final.pop.call.integrated.mac.seurat,
+          ncol      = 2, 
+          name      = "final_mac_pops/KDM5C - sex group - violinplot.pdf", 
+          width     = 10, height = 20, draw.names = T, pt.size = 1, cols = M.int_refined.pop.colors, stack = F, group.by = "Sex")
+
+customDot(object = final.pop.call.integrated.mac.seurat, features = "KDM5C", name = "final_mac_pops/KDM5C - dotplot.pdf", dot.scale = 10, cluster.idents = T, width = 12)
+customDot(object = final.pop.call.integrated.mac.seurat, split.by = "Sex", features = "KDM5C", name = "final_mac_pops/KDM5C - sex split - dotplot.pdf", dot.scale = 10, cluster.idents = T, width = 14)
+customDot(object = final.pop.call.integrated.mac.seurat, group.by = "Sex", features = "KDM5C", name = "final_mac_pops/KDM5C - sex group - dotplot.pdf", dot.scale = 10, cluster.idents = T, width = 5)
+
+customFeature(object = final.pop.call.integrated.mac.seurat, features = "KDM5C", name = "final_mac_pops/KDM5C - featureplot.pdf", pt.size = 3, order = T,cols = c("grey", "red"))
+
+customVln(features  = c("KDM5C"),
+          object    = final.pop.call.from_full.integrated.mac.seurat, group.by = "archetype",
+          ncol      = 2,
+          name      = "final_mac_pops/KDM5C archetype - violinplot.pdf", 
+          width     = 10, height = 20, draw.names = T, pt.size = 1, cols = archetype.colors, stack = F)
+
+customVln(features  = c("KDM5C"),
+          object    = final.pop.call.from_full.integrated.mac.seurat, group.by = "archetype",
+          ncol      = 2, 
+          split.by = "Sex", splitPlot = T,
+          name      = "final_mac_pops/KDM5C archetype - sex split - violinplot.pdf", 
+          width     = 15, height = 20, draw.names = T, pt.size = 1, cols = archetype.colors, stack = F)
+
+
+customDot(final.pop.call.from_full.integrated.mac.seurat, features = "KDM5C", group.by = "archetype", name = "final_mac_pops/KDM5C archetype - dotplot.pdf")
+customDot(final.pop.call.from_full.integrated.mac.seurat, features = "KDM5C", group.by = "archetype", split.by = "Sex", name = "final_mac_pops/KDM5C archetype - sexsplit - dotplot.pdf", width = 7)
+
+## Sex chrom linked pairs involved in iLAMs
+customVln(features  = c("KDM5C", "KDM5D", "DDX3X", "DDX3Y"),
+          object    = final.pop.call.integrated.mac.seurat,
+          ncol      = 2,
+          name      = "final_mac_pops/Sex chrom - violinplot.pdf", 
+          width     = 10, height = 20, draw.names = T, pt.size = 1, cols = M.int_refined.pop.colors, stack = F)
+
+customVln(features  = c("KDM5C", "KDM5D", "DDX3X", "DDX3Y"),
+          object    = final.pop.call.integrated.mac.seurat,
+          ncol      = 2, 
+          split.by = "Sex", splitPlot = T,
+          name      = "final_mac_pops/Sex chrom - sex split - violinplot.pdf", 
+          width     = 15, height = 20, draw.names = T, pt.size = 1, cols = M.int_refined.pop.colors, stack = F)
+
+VlnPlot(object = final.pop.call.integrated.mac.seurat, features = "KDM5C", split.by = "Sex", split.plot = T)
+
+customVln(features  = c("KDM5C", "KDM5D", "DDX3X", "DDX3Y"),
+          object    = final.pop.call.integrated.mac.seurat,
+          ncol      = 2, 
+          name      = "final_mac_pops/Sex chrom - sex group - violinplot.pdf", 
+          width     = 10, height = 20, draw.names = T, pt.size = 1, cols = M.int_refined.pop.colors, stack = F, group.by = "Sex")
+
+customDot(object = final.pop.call.integrated.mac.seurat, features = c("KDM5C", "KDM5D", "DDX3X", "DDX3Y"), name = "final_mac_pops/Sex chrom - dotplot.pdf", dot.scale = 10, cluster.idents = T, width = 12)
+customDot(object = final.pop.call.integrated.mac.seurat, split.by = "Sex", features = c("KDM5C", "KDM5D", "DDX3X", "DDX3Y"), name = "final_mac_pops/Sex chrom - sex split - dotplot.pdf", dot.scale = 10, cluster.idents = T, width = 14)
+customDot(object = final.pop.call.integrated.mac.seurat, group.by = "Sex", features = c("KDM5C", "KDM5D", "DDX3X", "DDX3Y"), name = "final_mac_pops/Sex chrom - sex group - dotplot.pdf", dot.scale = 10, cluster.idents = T, width = 5)
+
+customFeature(object = final.pop.call.integrated.mac.seurat, features = c("KDM5C", "KDM5D", "DDX3X", "DDX3Y"), name = "final_mac_pops/Sex chrom - featureplot.pdf", pt.size = 3, order = T,cols = c("grey", "red"))
+
+## HME short list
+customVln(features  = c("KDM5C", "PRMT6", "CARM1", "KAT2B", "BAZ1B"),
+          object    = final.pop.call.integrated.mac.seurat,
+          ncol      = 2,
+          name      = "final_mac_pops/HME - violinplot.pdf", 
+          width     = 20, height = 40, draw.names = T, pt.size = 1, cols = M.int_refined.pop.colors, stack = F)
+
+customVln(features  = c("KDM5C", "PRMT6", "CARM1", "KAT2B", "BAZ1B"),
+          object    = final.pop.call.integrated.mac.seurat,
+          ncol      = 2, 
+          split.by = "Sex", splitPlot = T,
+          name      = "final_mac_pops/HME - sex split - violinplot.pdf", 
+          width     = 20, height = 40, draw.names = T, pt.size = 1, cols = M.int_refined.pop.colors, stack = F)
+
+VlnPlot(object = final.pop.call.integrated.mac.seurat, features = "KDM5C", split.by = "Sex", split.plot = T)
+
+customVln(features  = c("KDM5C", "PRMT6", "CARM1", "KAT2B", "BAZ1B"),
+          object    = final.pop.call.integrated.mac.seurat,
+          ncol      = 2, 
+          name      = "final_mac_pops/HME - sex group - violinplot.pdf", 
+          width     = 20, height = 40, draw.names = T, pt.size = 1, cols = M.int_refined.pop.colors, stack = F, group.by = "Sex")
+
+customDot(object = final.pop.call.integrated.mac.seurat, features = c("KDM5C", "PRMT6", "CARM1", "KAT2B", "BAZ1B"), name = "final_mac_pops/HME - dotplot.pdf", dot.scale = 10, cluster.idents = T, width = 16)
+customDot(object = final.pop.call.integrated.mac.seurat, split.by = "Sex", features = c("KDM5C", "PRMT6", "CARM1", "KAT2B", "BAZ1B"), name = "final_mac_pops/HME - sex split - dotplot.pdf", dot.scale = 10, cluster.idents = T, width = 18)
+customDot(object = final.pop.call.integrated.mac.seurat, group.by = "Sex", features = c("KDM5C", "PRMT6", "CARM1", "KAT2B", "BAZ1B"), name = "final_mac_pops/HME - sex group - dotplot.pdf", dot.scale = 10, cluster.idents = T, width = 5)
+
+customFeature(object = final.pop.call.integrated.mac.seurat, features = c("KDM5C", "PRMT6", "CARM1", "KAT2B", "BAZ1B"), name = "final_mac_pops/HME - featureplot.pdf", pt.size = 3, order = T,cols = c("grey", "red"))
+
+## Expression correlation with traits
+## Process metadata
+# Read the file
+meta.data <- read.xlsx(file = "raw_data/2021-09-16 AtheroExpress Database Marie.xlsx", sheetIndex = 1, header = T, as.data.frame = T)
+dim(meta.data)
+
+# Fix NA values
+# Work-around weird 'charToDate()' error when checking if a string is NA while there is a date like structure in the string by forcing those columns to 'factor'
+for(theCol in colnames(meta.data)[grep("date", colnames(meta.data), ignore.case = T)]){
+  meta.data[, theCol] <- factor(meta.data[, theCol])
+}
+meta.data[meta.data == "NA"] <- NA
+
+# Filter on quantity of NAs (keep only columns with less than 10% NA)
+max.na    <- floor(nrow(meta.data) * 0.10)
+meta.data <- meta.data[,colSums(apply(meta.data, 1:2, is.na)) <= max.na]
+dim(meta.data)
+
+# Filter out columns with the same value for all rows
+meta.data <- meta.data[,apply(meta.data, 2, function(x)length(unique(x))) > 1]
+dim(meta.data)
+
+# Filter out columns with the same value or NA for all rows
+meta.data <- meta.data[,!(apply(meta.data, 2, function(x)length(unique(x))) == 2 & colSums(apply(meta.data, 1:2, is.na)) > 0)]
+dim(meta.data)
+
+## Add metadata to 43p seurat object (as we don't have htis info for the 10X guys)
+final.pop.call.integrated.mac.43p.seurat <- subset(final.pop.call.integrated.mac.seurat, subset = Method == "CEL-seq")
+
+# Fetch patient information per cell
+md.df <- data.frame(Patient=final.pop.call.integrated.mac.43p.seurat$Patient)
+
+# Expand metadata to all cells
+md.df <- merge(md.df, meta.data, by.x = 1, by.y = 2, all.x = T)
+md.df$Patient <- NULL
+
+# And add to the Seurat object
+for (i in names(md.df)){
+  final.pop.call.integrated.mac.43p.seurat <- AddMetaData(final.pop.call.integrated.mac.43p.seurat, md.df[,i], col.name = i)
+}
+
+## Let's bin the traits with more than 10 options
+binned.meta.data <- meta.data[,1:2]
+for(theTrait in colnames(meta.data[,c(-1,-2)])){
+  # Keep only traits with over 10 levels
+  if(length(levels(factor(meta.data[,theTrait]))) > 10){
+    # Keep only numeric traits
+    if(check.numeric(meta.data[1,theTrait])){
+      cat(paste("Binning:", theTrait,"\n"))
+      
+      # Define the quartiles of this trait
+      q <- quantile(as.numeric(as.character(meta.data[, theTrait])), na.rm = T)
+      q.levels <-             paste("n <", round(q[2], digits = 0))
+      q.levels <- c(q.levels, paste(round(q[2], digits = 0), "< n <", round(q[3], digits = 0)))
+      q.levels <- c(q.levels, paste(round(q[3], digits = 0), "< n <", round(q[4], digits = 0)))
+      q.levels <- c(q.levels, paste("n >", round(q[4], digits = 0)))
+      
+      # Keep a working copy of the trait were we replace NA values
+      tmp.df                <- meta.data[,theTrait, drop = F]
+      tmp.df[is.na(tmp.df)] <- 0
+      
+      # Build a results data frame, case by case
+      results.df            <- tmp.df
+      results.df[,theTrait] <- as.character(results.df[,theTrait])
+      
+      results.df[as.numeric(as.character(tmp.df[,theTrait]))  < q[2]                                                     , theTrait] <- q.levels[1]
+      results.df[as.numeric(as.character(tmp.df[,theTrait])) >= q[2] & as.numeric(as.character(tmp.df[,theTrait])) < q[3], theTrait] <- q.levels[2]
+      results.df[as.numeric(as.character(tmp.df[,theTrait])) >= q[3] & as.numeric(as.character(tmp.df[,theTrait])) < q[4], theTrait] <- q.levels[3]
+      results.df[as.numeric(as.character(tmp.df[,theTrait])) >= q[4]                                                     , theTrait] <- q.levels[4]
+      
+      results.df[,theTrait] <- factor(results.df[,theTrait], levels = q.levels)
+      
+      # Add results back to the main df
+      binned.meta.data <- cbind(binned.meta.data, results.df)
+    }
+  }
+}
+
+## Add binned metadata to the seurat object
+colnames(binned.meta.data) <- paste0(colnames(binned.meta.data), ".binned", sep = "")
+head(binned.meta.data)
+
+# Fetch patient information per cell
+md.df <- data.frame(Patient=final.pop.call.integrated.mac.43p.seurat$Patient)
+
+# Expand metadata to all cells
+md.df <- merge(md.df, binned.meta.data, by.x = 1, by.y = 2, all.x = T)
+md.df$Patient <- NULL
+
+# And add to the Seurat object
+for (i in names(md.df)){
+  final.pop.call.integrated.mac.43p.seurat <- AddMetaData(final.pop.call.integrated.mac.43p.seurat, md.df[,i], col.name = i)
+}
+
+DefaultAssay(final.pop.call.integrated.mac.43p.seurat) <- "RNA"
+ToI <- c("Symptoms.5G", "AsymptSympt", "Med.statin", "Phenotype", "Age.binned", "BMI.binned", "Gender", "rheuma2", "DiabetesStatus", "DM.composite", "thrombos", "Sex")
+for (theGene in c("KDM5C", "KDM5D", "DDX3X", "DDX3Y", "PRMT6", "CARM1", "KAT2B", "BAZ1B")){
+  skip <- "0"
+  for(theTrait in ToI){
+    cat(theGene, theTrait, "\n")
+    nona.seurat <- subset(final.pop.call.integrated.mac.43p.seurat, cells = row.names(final.pop.call.integrated.mac.43p.seurat@meta.data[!is.na(final.pop.call.integrated.mac.43p.seurat@meta.data[,theTrait]),]))
+    
+    if(which(ToI == theTrait) == 1){
+      if(sum(AverageExpression(nona.seurat, features = theGene)$RNA) == 0){
+        cat("Skipping",theGene, "...\n\n")
+        skip <- "1"
+      }else{
+        dir.create(paste("final_mac_pops/correlations/", theGene, " Individual trait correlation/", sep = ""), showWarnings = F, recursive = T)
+        stratifyByExpression(object = nona.seurat, strat.by = theGene, return.object = F, do.plot = T, onlyUMAP = T, file.name = paste("final_mac_pops/correlations/", theGene, " Individual trait correlation/", theGene, " stratified feature plot.pdf", sep = ""))
+      }
+    }
+    
+    if(skip == "0"){
+      pv <- kruskal.test(GetAssayData(nona.seurat)[theGene,]~nona.seurat@meta.data[,theTrait])$p.value
+      df <- data.frame(x = GetAssayData(nona.seurat)[theGene,], y = nona.seurat@meta.data[,theTrait])
+      ggplot(df) + geom_boxplot(aes(y, x, fill = y)) + 
+        theme_pubclean(base_size = 32) +
+        theme(legend.position = "none") + scale_fill_futurama() +
+        ylab(paste(theGene, "Expression", sep = " ")) +
+        xlab(theTrait) + 
+        annotate(geom = 'text', label = paste("p=",round(pv, digits = 2), sep =""), x = -Inf, y = Inf, hjust = 0, vjust = 1, size = 10, fontface = "bold") + 
+        ggtitle(paste(theGene,"correlation with", theTrait, sep = " "))
+      dir.create(paste("final_mac_pops/correlations/", theGene, " Individual trait correlation/", sep = ""), showWarnings = F, recursive = T)
+      ggsave(filename = paste("final_mac_pops/correlations/", theGene, " Individual trait correlation/", theGene, " correlation with ", theTrait,".pdf", sep = ""))
+    }
+  }
+}
+
+Mye.markers.dgi.filtered[[10]][grep("1RN",Mye.markers.dgi.filtered[[10]]$Gene),]
+
+
+
+## Plot some LXR stuff
+LXR.genes <- c("NR1H3", "NR1H2")
+dir.create("LXR_results", showWarnings = F)
+
+customUMAP(object = final.pop.call.from_full.integrated.mye.velocyto.seurat, cols = M.int_refined.pop.colors, pt.size = 3,shuffle = T, legend.pos = "right", file.name = "LXR_results/MonoMac UMAP.pdf", plot.width = 15)
+bunchOfCustomPlots(final.pop.call.from_full.integrated.mye.velocyto.seurat, features = LXR.genes, Vln.draw.names = T, name = 'LXR_results/LXR genes', 
+                   feature.pt.size = 3, Vln.pt.size = 0.5, Vln.width = 15, Vln.height = 15, Vln.color = M.int_refined.pop.colors, Dot.width = 13, dot.scale = 15)
+stratifyByExpression(object = final.pop.call.from_full.integrated.mye.velocyto.seurat, strat.by = "NR1H2", file.name = "LXR_results/NR1H2 stratified", do.plot = T, onlyUMAP = T)
+stratifyByExpression(object = final.pop.call.from_full.integrated.mye.velocyto.seurat, strat.by = "NR1H3", file.name = "LXR_results/NR1H3 stratified", do.plot = T, onlyUMAP = T)

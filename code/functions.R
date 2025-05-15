@@ -421,7 +421,7 @@ stratPlots <- function(object = samples.seurat, assay = "RNA", group.by = NULL, 
   DotPlot(object = object, assay = "RNA", features = features, group.by = group.by, cols = "Spectral", dot.scale = 15) + scale_colour_gsea()
   ggsave(paste(name, " - dot plot.pdf", sep = ""), width = 2*length(features))
   
-  FeaturePlot(object = object, assay = "RNA", features = features, pt.size = 2, split.by = group.by, cols = c("grey", "firebrick"), order = T, ncol = ncol)
+  FeaturePlot(object = object, features = features, pt.size = 2, split.by = group.by, cols = c("grey", "firebrick"), order = T, ncol = ncol)
   ggsave(paste(name, " - feature plot.pdf", sep = ""), height = 5*(length(features)/ncol), width = 5*(length(features)/ncol))
 }
 
@@ -491,7 +491,8 @@ stratifyByExpression <- function(object = all.seur.combined, assay = "RNA", stra
     ggsave(filename  = paste(file.name, " - violin.pdf"))
     
     customUMAP(object    = object, 
-               group.by  = marker.col, 
+               group.by  = marker.col,
+               order     = c("High", "Medium", "Low", "Zero"),
                pt.size   = 4, 
                cols      = c("grey", "bisque", "coral", "firebrick"), 
                title     = paste(strat.by, "expression", sep = " "),
@@ -529,8 +530,8 @@ get_plot_limits <- function(plot) {
   list(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax)
 }
 
-customUMAP <- function(object = object, group.by = NULL, pt.size = 4, label = F,label.size = NULL, cols = NULL, title = NULL, font.size = 14, reduction = "umap", shuffle = T, legend.pos = "top", seed = 666, file.name = "myplot.pdf", plot.height = 10, plot.width = 10, sizes.highlight = 1, cells.highlight = NULL, cells = NULL){
-  p1 <- DimPlot(object = object, group.by = group.by, pt.size = pt.size, label = label, label.size = label.size, cols = cols, reduction = reduction, shuffle = shuffle, seed = seed, sizes.highlight = sizes.highlight, cells.highlight = cells.highlight, cells = cells) +
+customUMAP <- function(object = object, group.by = NULL, order = NULL, pt.size = 4, label = F,label.size = NULL, cols = NULL, title = NULL, font.size = 14, reduction = "umap", shuffle = T, legend.pos = "top", seed = 666, file.name = "myplot.pdf", plot.height = 10, plot.width = 10, sizes.highlight = 1, cells.highlight = NULL, cells = NULL){
+  p1 <- DimPlot(object = object, group.by = group.by, order = order, pt.size = pt.size, label = label, label.size = label.size, cols = cols, reduction = reduction, shuffle = shuffle, seed = seed, sizes.highlight = sizes.highlight, cells.highlight = cells.highlight, cells = cells) +
         ggtitle(title) +
         xlab("UMAP 2") +
         ylab("UMAP 1") + 

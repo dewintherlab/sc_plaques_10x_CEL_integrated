@@ -88,3 +88,34 @@ from_full.mye.int.monocle <- order_cells(from_full.mye.int.monocle, root_pr_node
 plot_cells(from_full.mye.int.monocle, color_cells_by = "pseudotime", label_cell_groups = FALSE, label_leaves = FALSE,  label_roots = F,
            label_branch_points = FALSE, cell_size = 1.5, show_trajectory_graph = F)
 ggsave(file = "from_full_myeloid_43p_celseq_integration/monocle_pseudotime.pr_node_root.pdf")
+
+
+
+## Check KDM5C in all cells
+DefaultAssay(final.pop.call.integrated.full.seurat) <- "RNA"
+customVln(features  = c("KDM5C"),
+          object    = final.pop.call.integrated.full.seurat,
+          ncol      = 2,
+          name      = "final_mac_pops/KDM5C - full - violinplot.pdf", 
+          width     = 10, height = 20, draw.names = T, pt.size = 1, cols = full_set.colors, stack = F)
+
+customVln(features  = c("KDM5C"),
+          object    = final.pop.call.integrated.full.seurat,
+          ncol      = 2, 
+          split.by = "Sex", splitPlot = T,
+          name      = "final_mac_pops/KDM5C - full - sex split - violinplot.pdf", 
+          width     = 15, height = 20, draw.names = T, pt.size = 1, cols = full_set.colors, stack = F)
+
+VlnPlot(object = final.pop.call.integrated.full.seurat, features = "KDM5C", split.by = "Sex", split.plot = T)
+
+customVln(features  = c("KDM5C"),
+          object    = final.pop.call.integrated.full.seurat,
+          ncol      = 2, 
+          name      = "final_mac_pops/KDM5C - full- sex group - violinplot.pdf", 
+          width     = 10, height = 20, draw.names = T, pt.size = 1, cols = full_set.colors, stack = F, group.by = "Sex")
+
+customDot(object = final.pop.call.integrated.full.seurat, features = "KDM5C", name = "final_mac_pops/KDM5C - full- dotplot.pdf", dot.scale = 10, cluster.idents = T, width = 12)
+customDot(object = final.pop.call.integrated.full.seurat, split.by = "Sex", features = "KDM5C", name = "final_mac_pops/KDM5C - full - sex split - dotplot.pdf", dot.scale = 10, cluster.idents = T, width = 14)
+customDot(object = final.pop.call.integrated.full.seurat, group.by = "Sex", features = "KDM5C", name = "final_mac_pops/KDM5C - full - sex group - dotplot.pdf", dot.scale = 10, cluster.idents = T, width = 5)
+
+customFeature(object = final.pop.call.integrated.full.seurat, features = "KDM5C", name = "final_mac_pops/KDM5C - full  - featureplot.pdf", pt.size = 3, order = T,cols = c("grey", "red"))
