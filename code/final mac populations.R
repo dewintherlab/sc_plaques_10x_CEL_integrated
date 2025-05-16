@@ -1458,20 +1458,62 @@ VlnPlot(final.pop.call.from_full.integrated.mac.seurat, features = c("CCL18", "M
 final.pop.call.from_full.integrated.mac.seurat <- AddMetaData(final.pop.call.from_full.integrated.mac.seurat, metadata = Idents(final.pop.call.from_full.integrated.mac.seurat), col.name = "sub.pops")
 unique(Idents(final.pop.call.from_full.integrated.mac.seurat))
 final.pop.call.from_full.integrated.mac.seurat <- RenameIdents(final.pop.call.from_full.integrated.mac.seurat, 
-                                                     "CD14+TREM2+FOLR2-ABCG+ Lipid Associated Macrophages" = "LAM",
-                                                     "CD14+IL1B+SELL+S100A8+ Migrating Inflammatory Monocyte-derived Macrophages" = "Inflammatory",
-                                                     "CD14+TREM2-TIMP1+HSPA6+ Lipid-stress Activated Foamy Macrophages" = "iLAM",
-                                                     "CD14+TREM2-OLR1+NLRP3+ Inflammatory Foamy Macrophages" = "iLAM",
-                                                     "CD14+IL1B-TREM2-FOLR2+ Resident-like Macrophages" = "Resident-like",
-                                                     "CD14+IL1B+SELL+MX1+ Interferon Activated Inflammatory Monocyte-derived Macrophages" = "Inflammatory",
-                                                     "CD14+-IL1B+SELL+CD16+ Migrating Inflammatory Monocyte-derived Macrophages" = "Inflammatory",
-                                                     "CD14+TNF+TREM2+FOLR2+ Inflammatory Resident-like Lipid Associated Macrophages" = "LAM",
-                                                     "CD14+TREM2-OLR1+ABCA+ Foamy Macrophages" = "iLAM")
+                                                               "CD14+TREM2+FOLR2-ABCG+ Lipid Associated Macrophages" = "LAM",
+                                                               "CD14+IL1B+SELL+S100A8+ Migrating Inflammatory Monocyte-derived Macrophages" = "Inflammatory",
+                                                               "CD14+TREM2-TIMP1+HSPA6+ Lipid-stress Activated Foamy Macrophages" = "iLAM",
+                                                               "CD14+TREM2-OLR1+NLRP3+ Inflammatory Foamy Macrophages" = "iLAM",
+                                                               "CD14+IL1B-TREM2-FOLR2+ Resident-like Macrophages" = "Resident-like",
+                                                               "CD14+IL1B+SELL+MX1+ Interferon Activated Inflammatory Monocyte-derived Macrophages" = "Inflammatory",
+                                                               "CD14+-IL1B+SELL+CD16+ Migrating Inflammatory Monocyte-derived Macrophages" = "Inflammatory",
+                                                               "CD14+TNF+TREM2+FOLR2+ Inflammatory Resident-like Lipid Associated Macrophages" = "LAM",
+                                                               "CD14+TREM2-OLR1+ABCA+ Foamy Macrophages" = "iLAM")
 final.pop.call.from_full.integrated.mac.seurat <- AddMetaData(final.pop.call.from_full.integrated.mac.seurat, metadata = Idents(final.pop.call.from_full.integrated.mac.seurat), col.name = "archetype")
 Idents(final.pop.call.from_full.integrated.mac.seurat) <- final.pop.call.from_full.integrated.mac.seurat$sub.pops
 
+# Order
+mac.archetype.order <- c("Inflammatory", "iLAM", "LAM", "Resident-like")
+mac.pop.order       <- c("CD14+-IL1B+SELL+CD16+ Migrating Inflammatory Monocyte-derived Macrophages", "CD14+IL1B+SELL+MX1+ Interferon Activated Inflammatory Monocyte-derived Macrophages", "CD14+IL1B+SELL+S100A8+ Migrating Inflammatory Monocyte-derived Macrophages", 
+                         "CD14+TREM2-OLR1+ABCA+ Foamy Macrophages", "CD14+TREM2-OLR1+NLRP3+ Inflammatory Foamy Macrophages", "CD14+TREM2-TIMP1+HSPA6+ Lipid-stress Activated Foamy Macrophages",
+                         "CD14+TREM2+FOLR2-ABCG+ Lipid Associated Macrophages", "CD14+IL1B-TREM2-FOLR2+ Resident-like Macrophages", "CD14+TNF+TREM2+FOLR2+ Inflammatory Resident-like Lipid Associated Macrophages")
+
+Idents(final.pop.call.from_full.integrated.mac.seurat)   <- factor(Idents(final.pop.call.from_full.integrated.mac.seurat), levels = mac.pop.order)
+final.pop.call.from_full.integrated.mac.seurat$archetype <- factor(final.pop.call.from_full.integrated.mac.seurat$archetype, levels = mac.archetype.order)
+
 # Save the object
 saveRDS(final.pop.call.from_full.integrated.mac.seurat, "Seurat_Objects/final.pop.call.from_full.integrated.mac.seurat.RDS")
+
+## Make a myeloid object too
+# Add archetypes
+final.pop.call.from_full.integrated.mye.velocyto.seurat <- AddMetaData(final.pop.call.from_full.integrated.mye.velocyto.seurat, metadata = Idents(final.pop.call.from_full.integrated.mye.velocyto.seurat), col.name = "sub.pops")
+unique(Idents(final.pop.call.from_full.integrated.mye.velocyto.seurat))
+final.pop.call.from_full.integrated.mye.velocyto.seurat <- RenameIdents(final.pop.call.from_full.integrated.mye.velocyto.seurat, 
+                                                                        "CD14+TREM2+FOLR2-ABCG+ Lipid Associated Macrophages" = "LAM",
+                                                                        "CD14+IL1B+SELL+S100A8+ Migrating Inflammatory Monocyte-derived Macrophages" = "Inflammatory",
+                                                                        "CD14+TREM2-TIMP1+HSPA6+ Lipid-stress Activated Foamy Macrophages" = "iLAM",
+                                                                        "CD14+TREM2-OLR1+NLRP3+ Inflammatory Foamy Macrophages" = "iLAM",
+                                                                        "CD14+IL1B-TREM2-FOLR2+ Resident-like Macrophages" = "Resident-like",
+                                                                        "CD14+IL1B+SELL+MX1+ Interferon Activated Inflammatory Monocyte-derived Macrophages" = "Inflammatory",
+                                                                        "CD14+-IL1B+SELL+CD16+ Migrating Inflammatory Monocyte-derived Macrophages" = "Inflammatory",
+                                                                        "CD14+TNF+TREM2+FOLR2+ Inflammatory Resident-like Lipid Associated Macrophages" = "LAM",
+                                                                        "CD14+TREM2-OLR1+ABCA+ Foamy Macrophages" = "iLAM",
+                                                                        "CD14+CD16-CD64+SLAN- Classical Monocytes" = "Monocytes",
+                                                                        "CD14+CD16+CD64+SLAN- Intermediate Monocytes" = "Monocytes",
+                                                                        "CD14+CD16+CD64-SLAN+ Non-Classical Monocytes" = "Monocytes")
+final.pop.call.from_full.integrated.mye.velocyto.seurat <- AddMetaData(final.pop.call.from_full.integrated.mye.velocyto.seurat, metadata = Idents(final.pop.call.from_full.integrated.mye.velocyto.seurat), col.name = "archetype")
+Idents(final.pop.call.from_full.integrated.mye.velocyto.seurat) <- final.pop.call.from_full.integrated.mye.velocyto.seurat$sub.pops
+
+# Order
+mye.archetype.order <- c("Monocytes", "Inflammatory", "iLAM", "LAM", "Resident-like")
+mye.pop.order       <- c("CD14+CD16-CD64+SLAN- Classical Monocytes", "CD14+CD16+CD64+SLAN- Intermediate Monocytes", "CD14+CD16+CD64-SLAN+ Non-Classical Monocytes",
+                         "CD14+-IL1B+SELL+CD16+ Migrating Inflammatory Monocyte-derived Macrophages", "CD14+IL1B+SELL+MX1+ Interferon Activated Inflammatory Monocyte-derived Macrophages", "CD14+IL1B+SELL+S100A8+ Migrating Inflammatory Monocyte-derived Macrophages", 
+                         "CD14+TREM2-OLR1+ABCA+ Foamy Macrophages", "CD14+TREM2-OLR1+NLRP3+ Inflammatory Foamy Macrophages", "CD14+TREM2-TIMP1+HSPA6+ Lipid-stress Activated Foamy Macrophages",
+                         "CD14+TREM2+FOLR2-ABCG+ Lipid Associated Macrophages", "CD14+IL1B-TREM2-FOLR2+ Resident-like Macrophages", "CD14+TNF+TREM2+FOLR2+ Inflammatory Resident-like Lipid Associated Macrophages")
+
+Idents(final.pop.call.from_full.integrated.mye.velocyto.seurat)   <- factor(Idents(final.pop.call.from_full.integrated.mye.velocyto.seurat), levels = mye.pop.order)
+final.pop.call.from_full.integrated.mye.velocyto.seurat$archetype <- factor(final.pop.call.from_full.integrated.mye.velocyto.seurat$archetype, levels = mye.archetype.order)
+
+# Save the object
+saveRDS(final.pop.call.from_full.integrated.mye.velocyto.seurat, "Seurat_Objects/final.pop.call.from_full.integrated.mye.velocyto.seurat")
 
 ## From the myeloid object
 final.pop.call.integrated.mac.seurat <- integrated.mye.seurat
@@ -1493,6 +1535,16 @@ final.pop.call.integrated.mac.seurat <- RenameIdents(final.pop.call.integrated.m
                                                      "CD14+TREM2-OLR1+ABCA+ Foamy Macrophages" = "iLAM")
 final.pop.call.integrated.mac.seurat <- AddMetaData(final.pop.call.integrated.mac.seurat, metadata = Idents(final.pop.call.integrated.mac.seurat), col.name = "archetype")
 Idents(final.pop.call.integrated.mac.seurat) <- final.pop.call.integrated.mac.seurat$sub.pops
+
+# Order
+mac.archetype.order <- c("Inflammatory", "iLAM", "LAM", "Resident-like")
+mac.pop.order       <- c("CD14+-IL1B+SELL+CD16+ Migrating Inflammatory Monocyte-derived Macrophages", "CD14+IL1B+SELL+MX1+ Interferon Activated Inflammatory Monocyte-derived Macrophages", "CD14+IL1B+SELL+S100A8+ Migrating Inflammatory Monocyte-derived Macrophages", 
+                         "CD14+TREM2-OLR1+ABCA+ Foamy Macrophages", "CD14+TREM2-OLR1+NLRP3+ Inflammatory Foamy Macrophages", "CD14+TREM2-TIMP1+HSPA6+ Lipid-stress Activated Foamy Macrophages",
+                         "CD14+TREM2+FOLR2-ABCG+ Lipid Associated Macrophages", "CD14+IL1B-TREM2-FOLR2+ Resident-like Macrophages", "CD14+TNF+TREM2+FOLR2+ Inflammatory Resident-like Lipid Associated Macrophages")
+
+Idents(final.pop.call.integrated.mac.seurat)   <- factor(Idents(final.pop.call.integrated.mac.seurat), levels = mac.pop.order)
+final.pop.call.integrated.mac.seurat$archetype <- factor(final.pop.call.integrated.mac.seurat$archetype, levels = mac.archetype.order)
+
 
 # Save the object
 saveRDS(final.pop.call.integrated.mac.seurat, "Seurat_Objects/final.pop.call.integrated.mac.seurat.RDS")
@@ -1775,3 +1827,19 @@ bunchOfCustomPlots(final.pop.call.from_full.integrated.mye.velocyto.seurat, feat
                    feature.pt.size = 3, Vln.pt.size = 0.5, Vln.width = 15, Vln.height = 15, Vln.color = M.int_refined.pop.colors, Dot.width = 13, dot.scale = 15)
 stratifyByExpression(object = final.pop.call.from_full.integrated.mye.velocyto.seurat, strat.by = "NR1H2", file.name = "LXR_results/NR1H2 stratified", do.plot = T, onlyUMAP = T)
 stratifyByExpression(object = final.pop.call.from_full.integrated.mye.velocyto.seurat, strat.by = "NR1H3", file.name = "LXR_results/NR1H3 stratified", do.plot = T, onlyUMAP = T)
+
+## Plot HLA-DR
+HLADR.genes <- grep("HLA-DR",row.names(final.pop.call.from_full.integrated.mye.velocyto.seurat))
+HLADR.genes <- row.names(final.pop.call.from_full.integrated.mye.velocyto.seurat)[HLADR.genes]
+bunchOfCustomPlots(final.pop.call.from_full.integrated.mye.velocyto.seurat, features = HLADR.genes, Vln.draw.names = F, name = 'final_mac_pops/HLA-DR.mac_mono', 
+                   feature.pt.size = 3, Vln.pt.size = 0.5, Vln.width = 20, Vln.height = 5, Vln.color = M.int_refined.pop.colors, Dot.width = 13, dot.scale = 10, ncol = 3)
+
+bunchOfCustomPlots(final.pop.call.from_full.integrated.mye.velocyto.seurat, features = HLADR.genes, Vln.draw.names = F, name = 'final_mac_pops/HLA-DR.mac_mono.archetype', group.by = "archetype",
+                   feature.pt.size = 3, Vln.pt.size = 0.5, Vln.width = 20, Vln.height = 5, Vln.color = archetype.colors, Dot.width = 13, dot.scale = 10, ncol = 3)
+
+bunchOfCustomPlots(final.pop.call.integrated.mac.seurat, features = HLADR.genes, Vln.draw.names = F, name = 'final_mac_pops/HLA-DR.mac', 
+                   feature.pt.size = 3, Vln.pt.size = 0.5, Vln.width = 20, Vln.height = 5, Vln.color = M.int_refined.pop.colors, Dot.width = 13, dot.scale = 10, ncol = 3)
+
+bunchOfCustomPlots(final.pop.call.integrated.mac.seurat, features = HLADR.genes, Vln.draw.names = F, name = 'final_mac_pops/HLA-DR.mac.archetype', group.by = "archetype",
+                   feature.pt.size = 3, Vln.pt.size = 0.5, Vln.width = 20, Vln.height = 5, Vln.color = archetype.colors, Dot.width = 13, dot.scale = 10, ncol = 3)
+

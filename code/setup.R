@@ -71,6 +71,7 @@ library(aomisc)
 library(pathviewr)
 #library(maptools)
 #library(presto)
+library(glmGamPoi)
 register(MulticoreParam(6))
 
 # Load custom functions
