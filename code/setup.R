@@ -1,6 +1,6 @@
 ## Install packages
 # install.packages(c("BiocManager", "devtools", "rmarkdown", "Rcpp", "RcppArmadillo", "xlsx"))
-# BiocManager::install(c("Seurat", "rDGIdb", "anndata", "Signac", "ggplot2", "patchwork", "dplyr", "reshape2", "pheatmap", "varhandle", "ggsci", "limma", "ggpubr", "AnnotationDbi", "org.Hs.eg.db", "msigdbr", "dittoSeq", "EGSEA", "biomaRt", "escape", "IRanges", "gage", "pcaMethods", "ggsignif","qusage", "GEOquery", "umap", "EnhancedVolcano"))
+BiocManager::install(c("Seurat", "rDGIdb", "anndata", "Signac", "ggplot2", "patchwork", "dplyr", "reshape2", "pheatmap", "varhandle", "ggsci", "limma", "ggpubr", "AnnotationDbi", "org.Hs.eg.db", "msigdbr", "dittoSeq", "EGSEA", "biomaRt", "escape", "IRanges", "gage", "pcaMethods", "ggsignif","qusage", "GEOquery", "umap", "EnhancedVolcano"))
 # BiocManager::install(c("pathviewr", "drc", "AUCell", "mixtools", "decoupleR", "OmnipathR", "DESeq2","hgug4112a.db", "DropletUtils" ))
 # devtools::install_github("onofriAndreaPG/aomisc")
 
@@ -52,7 +52,7 @@ library(msigdbr)
 library(dittoSeq)
 library(rstatix)
 library(varhandle)
-library(rDGIdb)
+#library(rDGIdb)
 library(scales)
 library(reticulate)
 library(anndata)
